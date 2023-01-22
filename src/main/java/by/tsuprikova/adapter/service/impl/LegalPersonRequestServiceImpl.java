@@ -1,9 +1,9 @@
 package by.tsuprikova.adapter.service.impl;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
-import by.tsuprikova.adapter.model.NaturalPersonRequest;
+import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
-import by.tsuprikova.adapter.service.NaturalPersonRequestService;
+import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,25 +21,25 @@ import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
-public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestService {
+public class LegalPersonRequestServiceImpl implements LegalPersonRequestService {
 
     private WebClient webClient;
 
-
     @PostConstruct
     public void init() {
-        webClient = WebClient.builder().baseUrl("http://localhost:9000/smv/natural_person").
+        webClient = WebClient.builder().baseUrl("http://localhost:9000/smv/legal_person").
                 build();
 
     }
 
 
     @Override
-    public Mono<ResponseEntity<Void>> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
+    public Mono<ResponseEntity<Void>> transferClientRequest(LegalPersonRequest legalPersonRequest) {
         return webClient.
                 post().
-                uri("/save_request").
-                bodyValue(naturalPersonRequest).
+                uri("/save_request")
+                .accept(MediaType.APPLICATION_JSON).
+                bodyValue(legalPersonRequest).
                 retrieve().
                 toEntity(Void.class);
 
@@ -47,17 +47,16 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
 
     @Override
-    public ResponseEntity<ResponseWithFine> getClientResponseFromSVM(NaturalPersonRequest naturalPersonRequest) {
-
+    public ResponseEntity<ResponseWithFine> getClientResponseFromSVM(LegalPersonRequest legalPersonRequest) {
         return webClient.post().
                 uri("/get_response").
-                bodyValue(naturalPersonRequest).
+                bodyValue(legalPersonRequest).
                 retrieve().
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
                                 Mono.error(new ResponseWithFineNullException("No information found on "
-                                        + naturalPersonRequest.getSts() +
+                                        + legalPersonRequest.getSts() +
                                         " try again later"))).
                 toEntity(ResponseWithFine.class).
                 retryWhen(
@@ -69,13 +68,10 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
     @Override
     public ResponseEntity<Void> deleteResponse(int id) {
-
         return webClient.delete()
                 .uri("/response/{id}", id).
                 retrieve().
                 toEntity(Void.class).
                 block();
     }
-
-
 }
