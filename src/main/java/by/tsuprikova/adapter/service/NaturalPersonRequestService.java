@@ -7,10 +7,11 @@ import reactor.core.publisher.Mono;
 
 public interface NaturalPersonRequestService {
 
-    Mono<ResponseEntity<Void>> transferClientRequest(NaturalPersonRequest naturalPersonRequest);
+    //Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest);
 
-    ResponseEntity<ResponseWithFine> getClientResponseFromSVM(NaturalPersonRequest naturalPersonRequest);
+  // Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest);
 
-    ResponseEntity<Void> deleteResponse(int id);
+    //ResponseEntity<Void> deleteResponse(int id);
 
+    ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest);
 }

@@ -8,7 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +42,11 @@ public class ApplicationExceptionHandler {
 
     }
 
-
+    /*@ResponseStatus(HttpStatus.BAD_GATEWAY)
+    @ExceptionHandler(Exception.class)
+    public ResponseWithFineNullException handleResponseWithWebclientRequest(RuntimeException we) {
+        log.error(we.getMessage());
+        return new ResponseWithFineNullException("No information found, please try again later");
+    }*/
 
 }

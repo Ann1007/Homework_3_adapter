@@ -1,6 +1,5 @@
 package by.tsuprikova.adapter.controllers;
 
-
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
@@ -22,16 +21,9 @@ public class LegalPersonController {
 
 
     @PostMapping("/get_response")
-    public ResponseEntity<ResponseWithFine> getResponse(@Valid @RequestBody LegalPersonRequest legalPersonRequest) {
+    public ResponseEntity<ResponseWithFine> getResponse(@Valid @RequestBody LegalPersonRequest request) {
 
-        legalPersonRequestService.transferClientRequest(legalPersonRequest).subscribe();
-
-        ResponseEntity<ResponseWithFine> responseWithFine = legalPersonRequestService.getClientResponseFromSVM(legalPersonRequest);
-
-        if (responseWithFine != null) {
-            ResponseEntity<Void> resp = legalPersonRequestService.deleteResponse(responseWithFine.getBody().getId());
-
-        }
+        ResponseEntity<ResponseWithFine> responseWithFine = legalPersonRequestService.getResponseWithFineFromSMV(request);
 
         return responseWithFine;
 
