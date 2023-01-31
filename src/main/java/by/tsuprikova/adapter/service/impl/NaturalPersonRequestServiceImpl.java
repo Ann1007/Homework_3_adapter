@@ -15,6 +15,7 @@ import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.UUID;
 
 
 @Service
@@ -73,7 +74,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
 
 
-    private ResponseEntity<Void> deleteResponse(int id) {
+    private ResponseEntity<Void> deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
         return webClient.delete()

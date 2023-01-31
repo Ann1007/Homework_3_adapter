@@ -18,6 +18,7 @@ import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.UUID;
 
 
 @Service
@@ -71,7 +72,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     }
 
 
-    public void deleteResponse(int id) {
+    public void deleteResponse(UUID id) {
         log.info("sending id={} for delete legal person response from smv ", id);
          webClient.delete()
                 .uri("/response/{id}", id).
