@@ -24,7 +24,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
     private final WebClient webClient;
 
-    private Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
+    public Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
         log.info("Sending natural person request with sts ='{}' for saving on smv", naturalPersonRequest.getSts());
 
         return webClient.
@@ -37,7 +37,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     }
 
 
-    private Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest) {
+    public Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
         return webClient.post().
                 uri("/natural_person/get_response").
@@ -62,7 +62,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     }
 
 
-    private ResponseEntity<Void> deleteResponse(UUID id) {
+    public ResponseEntity<Void> deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
         return webClient.delete()

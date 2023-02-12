@@ -5,13 +5,15 @@ import by.tsuprikova.adapter.model.ResponseWithFine;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 public interface NaturalPersonRequestService {
 
-    //Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest);
+    Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest);
 
-  // Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest);
+  Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest);
 
-    //ResponseEntity<Void> deleteResponse(int id);
+    ResponseEntity<Void> deleteResponse(UUID id);
 
     ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest);
 }
