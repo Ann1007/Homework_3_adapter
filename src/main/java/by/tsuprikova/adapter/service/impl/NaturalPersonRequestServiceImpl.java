@@ -4,7 +4,7 @@ import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,33 +13,23 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.UUID;
 
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Slf4j
 public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestService {
 
-    private WebClient webClient;
-
-
-    @PostConstruct
-    public void init() {
-        webClient = WebClient.builder().baseUrl("http://localhost:9000/smv/natural_person").
-                        build();
-
-    }
-
+    private final WebClient webClient;
 
     private Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
         log.info("Sending natural person request with sts ='{}' for saving on smv", naturalPersonRequest.getSts());
 
         return webClient.
                 post().
-                uri("/save_request").
+                uri("/natural_person/save_request").
                 bodyValue(naturalPersonRequest).
                 retrieve().
                 bodyToMono(NaturalPersonRequest.class);
@@ -47,19 +37,18 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     }
 
 
-
     private Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
         return webClient.post().
-                uri("/get_response").
+                uri("/natural_person/get_response").
                 bodyValue(naturalPersonRequest).
                 retrieve().
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
                                 Mono.error(new ResponseWithFineNullException("No information found for  "
-                                        + naturalPersonRequest.getSts() +"' "
-                                       ))).
+                                        + naturalPersonRequest.getSts() + "' "
+                                ))).
                 toEntity(ResponseWithFine.class).
                 retryWhen(
                         Retry.backoff(3, Duration.ofSeconds(2))
@@ -67,18 +56,17 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                                 onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 {
                                     throw new ResponseWithFineNullException("No information found for  "
-                                        + naturalPersonRequest.getSts() +"' ");
+                                            + naturalPersonRequest.getSts() + "' ");
                                 }));
 
     }
-
 
 
     private ResponseEntity<Void> deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
         return webClient.delete()
-                .uri("/response/{id}", id).
+                .uri("/natural_person/response/{id}", id).
                 retrieve().
                 toEntity(Void.class).
                 block();
