@@ -1,8 +1,11 @@
 package by.tsuprikova.adapter.advice;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.SmvServerException;
+import by.tsuprikova.adapter.model.ErrorMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 
+import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,21 +36,23 @@ public class ApplicationExceptionHandler {
     }
 
 
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(ResponseWithFineNullException.class)
-    public Map<String, String> handleResponseWithFineNullException(ResponseWithFineNullException ex) {
+    public ResponseEntity<ErrorMessage> handleResponseWithFineNullException(ResponseWithFineNullException ex) {
         log.error(ex.getMessage());
-        Map<String, String> map = new HashMap<>();
-        map.put("error message ", "No information found on the given sts, try again later...");
-        return map;
+        ErrorMessage errorMessage = new ErrorMessage(ex.getMessage());
+        return new ResponseEntity<>(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
 
-    /*@ResponseStatus(HttpStatus.BAD_GATEWAY)
-    @ExceptionHandler(Exception.class)
-    public ResponseWithFineNullException handleResponseWithWebclientRequest(RuntimeException we) {
-        log.error(we.getMessage());
-        return new ResponseWithFineNullException("No information found, please try again later");
-    }*/
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler({SmvServerException.class, ConnectException.class})
+    public ResponseEntity<ErrorMessage> handleSmvServerException(Exception e) {
+        log.error(e.getMessage());
+        ErrorMessage errorMessage = new ErrorMessage("SMV service is  is unavailable");
+        return new ResponseEntity<>(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 
 }
