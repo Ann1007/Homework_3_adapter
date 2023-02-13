@@ -1,8 +1,7 @@
 package by.tsuprikova.adapter.model;
 
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
@@ -12,6 +11,7 @@ import javax.validation.constraints.NotBlank;
 @RequiredArgsConstructor
 public class NaturalPersonRequest {
 
+    @Schema(description = "СТС(свидетельство транспортного средства)", example = "98 ут 253901")
     @NotBlank(message = "поле стс не может быть пустое")
     private String sts;
 

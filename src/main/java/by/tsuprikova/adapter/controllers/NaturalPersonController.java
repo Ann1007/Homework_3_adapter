@@ -5,6 +5,7 @@ import by.tsuprikova.adapter.model.NaturalPersonRequest;
 
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +19,10 @@ import javax.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/adapter/natural_person")
 @Slf4j
+@Tag(name="Controller for natural person request", description="accepts a request from an natural person and returns a response with a fine")
+@RequestMapping("/adapter/natural_person")
+
 public class NaturalPersonController {
 
     private final NaturalPersonRequestService naturalPersonRequestService;
