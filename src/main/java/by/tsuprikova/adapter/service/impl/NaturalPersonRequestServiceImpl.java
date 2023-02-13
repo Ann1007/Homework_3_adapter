@@ -1,6 +1,7 @@
 package by.tsuprikova.adapter.service.impl;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
@@ -34,6 +35,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 retrieve().
                 bodyToMono(NaturalPersonRequest.class);
 
+
     }
 
 
@@ -44,11 +46,15 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 bodyValue(naturalPersonRequest).
                 retrieve().
                 onStatus(
-                        HttpStatus::is5xxServerError,
+                        HttpStatus::is4xxClientError,
                         response ->
                                 Mono.error(new ResponseWithFineNullException("No information found for  "
                                         + naturalPersonRequest.getSts() + "' "
                                 ))).
+                onStatus(
+                        HttpStatus::is5xxServerError,
+                        response ->
+                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
                 toEntity(ResponseWithFine.class).
                 retryWhen(
                         Retry.backoff(3, Duration.ofSeconds(2))
@@ -77,6 +83,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     public ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest) {
 
         Mono<NaturalPersonRequest> savedRequest = transferClientRequest(naturalPersonRequest);
+
         Mono<ResponseEntity<ResponseWithFine>> response = savedRequest.flatMap(this::getResponse);
 
         ResponseEntity<ResponseWithFine> responseEntity = response.block();

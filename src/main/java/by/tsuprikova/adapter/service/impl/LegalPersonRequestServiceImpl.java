@@ -1,6 +1,7 @@
 package by.tsuprikova.adapter.service.impl;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
@@ -47,11 +48,15 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 bodyValue(legalPersonRequest).
                 retrieve().
                 onStatus(
+                        HttpStatus::is4xxClientError,
+                        response ->
+                                Mono.error(new ResponseWithFineNullException("No information found for  "
+                                        + legalPersonRequest.getSts() + "' "
+                                ))).
+                onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new ResponseWithFineNullException("No information found on "
-                                        + legalPersonRequest.getSts() +
-                                        " try again later"))).
+                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
                 toEntity(ResponseWithFine.class).
                 retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
                         .filter(throwable -> throwable instanceof ResponseWithFineNullException).
