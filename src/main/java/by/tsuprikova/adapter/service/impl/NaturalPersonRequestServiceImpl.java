@@ -25,7 +25,8 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
     private final WebClient webClient;
 
-    public Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
+
+    public ResponseEntity<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
         log.info("Sending natural person request with sts ='{}' for saving on smv", naturalPersonRequest.getSts());
 
         return webClient.
@@ -33,13 +34,18 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 uri("/natural_person/save_request").
                 bodyValue(naturalPersonRequest).
                 retrieve().
-                bodyToMono(NaturalPersonRequest.class);
+                onStatus(
+                        HttpStatus::is5xxServerError,
+                        response ->
+                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                toEntity(NaturalPersonRequest.class).
+                block();
 
 
     }
 
 
-    public Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest) {
+    public ResponseEntity<ResponseWithFine> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
         return webClient.post().
                 uri("/natural_person/get_response").
@@ -63,17 +69,21 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                                 {
                                     throw new ResponseWithFineNullException("No information found for  "
                                             + naturalPersonRequest.getSts() + "' ");
-                                }));
+                                })).block();
 
     }
 
 
-    public ResponseEntity<Void> deleteResponse(UUID id) {
+    public void deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
-        return webClient.delete()
+         webClient.delete()
                 .uri("/natural_person/response/{id}", id).
                 retrieve().
+                onStatus(
+                        HttpStatus::is5xxServerError,
+                        response ->
+                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
                 toEntity(Void.class).
                 block();
     }
@@ -82,18 +92,21 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     @Override
     public ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest) {
 
-        Mono<NaturalPersonRequest> savedRequest = transferClientRequest(naturalPersonRequest);
+        ResponseEntity<NaturalPersonRequest> responseEntity = transferClientRequest(naturalPersonRequest);
+        ResponseEntity<ResponseWithFine> responseWithFineEntity = null;
 
-        Mono<ResponseEntity<ResponseWithFine>> response = savedRequest.flatMap(this::getResponse);
+        if (responseEntity.getStatusCode() == HttpStatus.ACCEPTED) {
 
-        ResponseEntity<ResponseWithFine> responseEntity = response.block();
-        if (responseEntity != null) {
-            log.info("Get a natural person request with sts ='{}' from SMV", naturalPersonRequest.getSts());
-            deleteResponse(responseEntity.getBody().getId());
+            responseWithFineEntity = getResponse(naturalPersonRequest);
+            log.info("Get a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
+
+            if (responseWithFineEntity.getBody() != null) {
+                deleteResponse(responseWithFineEntity.getBody().getId());
+
+            }
         }
 
-        return responseEntity;
-
+        return responseWithFineEntity;
 
     }
 

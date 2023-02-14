@@ -1,6 +1,7 @@
 package by.tsuprikova.adapter.controllers;
 
 
+import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 
 import by.tsuprikova.adapter.model.ResponseWithFine;

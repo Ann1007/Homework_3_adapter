@@ -28,7 +28,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     private final WebClient webClient;
 
 
-    public Mono<LegalPersonRequest> transferClientRequest(LegalPersonRequest legalPersonRequest) {
+    public ResponseEntity<LegalPersonRequest> transferClientRequest(LegalPersonRequest legalPersonRequest) {
         log.info("sending legal person request with sts{} for saving on smv", legalPersonRequest.getSts());
         return webClient.
                 post().
@@ -36,12 +36,18 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 .accept(MediaType.APPLICATION_JSON).
                 bodyValue(legalPersonRequest).
                 retrieve().
-                bodyToMono(LegalPersonRequest.class);
+                onStatus(
+                        HttpStatus::is5xxServerError,
+                        response ->
+                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                toEntity(LegalPersonRequest.class).
+                block();
 
     }
 
 
-    public Mono<ResponseEntity<ResponseWithFine>> getResponse(LegalPersonRequest legalPersonRequest) {
+    @Override
+    public ResponseEntity<ResponseWithFine> getResponse(LegalPersonRequest legalPersonRequest) {
 
         return webClient.post().
                 uri("/legal_person/get_response").
@@ -64,31 +70,41 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                         {
                             throw new ResponseWithFineNullException("No information found for  "
                                     + legalPersonRequest.getSts() + "' ");
-                        }));
+                        })).block();
     }
 
 
     public void deleteResponse(UUID id) {
+
         log.info("sending id={} for delete legal person response from smv ", id);
         webClient.delete()
                 .uri("/legal_person/response/{id}", id).
                 retrieve().
+                onStatus(
+                        HttpStatus::is5xxServerError,
+                        response ->
+                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
                 toEntity(Void.class).
                 block();
     }
 
+
     @Override
     public ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(LegalPersonRequest legalPersonRequest) {
 
-        Mono<LegalPersonRequest> savedRequest = transferClientRequest(legalPersonRequest);
-        Mono<ResponseEntity<ResponseWithFine>> response = savedRequest.flatMap(this::getResponse);
+        ResponseEntity<LegalPersonRequest> savedRequest = transferClientRequest(legalPersonRequest);
+        ResponseEntity<ResponseWithFine> responseWithFineEntity = null;
 
-        ResponseEntity<ResponseWithFine> responseEntity = response.block();
-        if (responseEntity != null) {
+        if (savedRequest.getStatusCode() == HttpStatus.ACCEPTED) {
+
+            responseWithFineEntity = getResponse(legalPersonRequest);
             log.info("get a legal person response for sts ='{}' from SMV", legalPersonRequest.getSts());
-            deleteResponse(responseEntity.getBody().getId());
+
+            if (responseWithFineEntity != null) {
+                deleteResponse(responseWithFineEntity.getBody().getId());
+            }
         }
 
-        return responseEntity;
+        return responseWithFineEntity;
     }
 }

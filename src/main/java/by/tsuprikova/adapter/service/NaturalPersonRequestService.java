@@ -1,5 +1,6 @@
 package by.tsuprikova.adapter.service;
 
+import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import org.springframework.http.ResponseEntity;
@@ -9,11 +10,11 @@ import java.util.UUID;
 
 public interface NaturalPersonRequestService {
 
-    Mono<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest);
+    ResponseEntity<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest);
 
-  Mono<ResponseEntity<ResponseWithFine>> getResponse(NaturalPersonRequest naturalPersonRequest);
+    ResponseEntity<ResponseWithFine> getResponse(NaturalPersonRequest naturalPersonRequest);
 
-    ResponseEntity<Void> deleteResponse(UUID id);
+    void deleteResponse(UUID id);
 
     ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest);
 }

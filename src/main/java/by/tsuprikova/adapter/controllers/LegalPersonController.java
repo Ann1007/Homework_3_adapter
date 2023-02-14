@@ -16,7 +16,7 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping("/adapter/legal_person")
 @RequiredArgsConstructor
-@Tag(name="Controller for legal person request", description="accepts a request from an natural person and returns a response with a fine")
+@Tag(name = "Controller for legal person request", description = "accepts a request from an natural person and returns a response with a fine")
 public class LegalPersonController {
 
     private final LegalPersonRequestService legalPersonRequestService;
@@ -25,9 +25,7 @@ public class LegalPersonController {
     @PostMapping("/get_response")
     public ResponseEntity<ResponseWithFine> getResponse(@Valid @RequestBody LegalPersonRequest request) {
 
-        ResponseEntity<ResponseWithFine> responseWithFine = legalPersonRequestService.getResponseWithFineFromSMV(request);
-
-        return responseWithFine;
+        return legalPersonRequestService.getResponseWithFineFromSMV(request);
 
     }
 
