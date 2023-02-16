@@ -39,7 +39,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                                Mono.error(new SmvServerException("SMV service is unavailable"))).
                 toEntity(LegalPersonRequest.class).
                 block();
 
@@ -57,19 +57,18 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                         HttpStatus::is4xxClientError,
                         response ->
                                 Mono.error(new ResponseWithFineNullException("No information found for  "
-                                        + legalPersonRequest.getSts() + "' "
-                                ))).
+                                        + legalPersonRequest.getSts()))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                                Mono.error(new SmvServerException("SMV service is unavailable"))).
                 toEntity(ResponseWithFine.class).
                 retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
                         .filter(throwable -> throwable instanceof ResponseWithFineNullException).
                         onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                         {
                             throw new ResponseWithFineNullException("No information found for  "
-                                    + legalPersonRequest.getSts() + "' ");
+                                    + legalPersonRequest.getSts());
                         })).block();
     }
 
@@ -83,7 +82,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                                Mono.error(new SmvServerException("SMV service is unavailable"))).
                 toEntity(Void.class).
                 block();
     }

@@ -55,12 +55,11 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                         HttpStatus::is4xxClientError,
                         response ->
                                 Mono.error(new ResponseWithFineNullException("No information found for  "
-                                        + naturalPersonRequest.getSts() + "' "
-                                ))).
+                                        + naturalPersonRequest.getSts()))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                                Mono.error(new SmvServerException("SMV service is unavailable"))).
                 toEntity(ResponseWithFine.class).
                 retryWhen(
                         Retry.backoff(3, Duration.ofSeconds(2))
@@ -68,7 +67,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                                 onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 {
                                     throw new ResponseWithFineNullException("No information found for  "
-                                            + naturalPersonRequest.getSts() + "' ");
+                                            + naturalPersonRequest.getSts());
                                 })).block();
 
     }
@@ -77,13 +76,13 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     public void deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
-         webClient.delete()
+        webClient.delete()
                 .uri("/natural_person/response/{id}", id).
                 retrieve().
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                                Mono.error(new SmvServerException("SMV service is unavailable"))).
                 toEntity(Void.class).
                 block();
     }
