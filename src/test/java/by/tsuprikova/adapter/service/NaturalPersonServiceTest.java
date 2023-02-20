@@ -1,10 +1,11 @@
-package by.tsuprikova.adapter;
+package by.tsuprikova.adapter.service;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import by.tsuprikova.adapter.service.impl.NaturalPersonRequestServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -28,6 +29,7 @@ import static org.hamcrest.Matchers.is;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -49,13 +51,13 @@ public class NaturalPersonServiceTest {
     @BeforeAll
     static void beforeAll() throws IOException {
         mockWebServer = new MockWebServer();
-        mockWebServer.start();
+        mockWebServer.start(9999);
     }
 
     @BeforeEach
     void setup() {
 
-        WebClient webClient = WebClient.builder().baseUrl(mockWebServer.url("/smv").toString()).build();
+        WebClient webClient = WebClient.builder().baseUrl(mockWebServer.url("/").toString()).build();
         requestService = new NaturalPersonRequestServiceImpl(webClient);
         naturalPersonRequest = new NaturalPersonRequest();
         String sts = "59 ут 123456";
@@ -81,6 +83,7 @@ public class NaturalPersonServiceTest {
 
         assertThat(result.getBody().getSts(), is("59 ут 123456"));
         assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
+
 
     }
 
@@ -108,6 +111,11 @@ public class NaturalPersonServiceTest {
 
         assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
         assertThat(resultResponse.getBody().getSts(), is("59 ут 123456"));
+        assertThat(resultResponse.getBody().getAmountOfAccrual(), is(amountOfAccrual));
+        assertThat(resultResponse.getBody().getAmountOfPaid(), is(amountOfPaid));
+        assertThat(resultResponse.getBody().getArticleOfKoap(), is(articleOfKoap));
+        assertThat(resultResponse.getBody().getNumberOfResolution(), is(numberOfResolution));
+
 
 
     }
@@ -130,6 +138,10 @@ public class NaturalPersonServiceTest {
 
         String errorMessage = "No information found for  59 ут 123456";
         Assertions.assertEquals(errorMessage, thrown.getMessage());
+        /*RecordedRequest request = mockWebServer.takeRequest(4, TimeUnit.SECONDS);
+
+        assertEquals("/natural_person/get_response", request.getPath());
+        assertEquals("POST", request.getMethod());*/
 
     }
 
@@ -144,9 +156,13 @@ public class NaturalPersonServiceTest {
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(response);
-        requestService.deleteResponse(id);
 
+        ResponseEntity<Void> deleteResult = requestService.deleteResponse(id);
+        assertThat(deleteResult.getStatusCode(),is(HttpStatus.OK));
 
     }
+
+
+
 
 }
