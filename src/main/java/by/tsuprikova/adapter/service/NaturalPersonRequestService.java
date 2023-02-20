@@ -14,7 +14,7 @@ public interface NaturalPersonRequestService {
 
     ResponseEntity<ResponseWithFine> getResponse(NaturalPersonRequest naturalPersonRequest);
 
-    void deleteResponse(UUID id);
+    ResponseEntity<Void> deleteResponse(UUID id);
 
     ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest);
 }

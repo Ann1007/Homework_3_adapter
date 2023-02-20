@@ -73,10 +73,10 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     }
 
 
-    public void deleteResponse(UUID id) {
+    public ResponseEntity<Void> deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
-        webClient.delete()
+     return    webClient.delete()
                 .uri("/natural_person/response/{id}", id).
                 retrieve().
                 onStatus(
