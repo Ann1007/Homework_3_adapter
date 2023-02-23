@@ -1,9 +1,9 @@
 package by.tsuprikova.adapter.service;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
-import by.tsuprikova.adapter.model.NaturalPersonRequest;
-import by.tsuprikova.adapter.model.NaturalPersonResponse;
-import by.tsuprikova.adapter.service.impl.NaturalPersonRequestServiceImpl;
+import by.tsuprikova.adapter.model.LegalPersonRequest;
+import by.tsuprikova.adapter.model.LegalPersonResponse;
+import by.tsuprikova.adapter.service.impl.LegalPersonRequestServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -24,10 +24,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class NaturalPersonServiceTest {
+public class LegalPersonServiceTest {
 
     @LocalServerPort
     private int port;
@@ -37,9 +36,9 @@ public class NaturalPersonServiceTest {
 
     private static MockWebServer mockWebServer;
 
-    private NaturalPersonRequestService requestService;
+    private LegalPersonRequestService requestService;
 
-    private NaturalPersonRequest naturalPersonRequest;
+    private LegalPersonRequest request;
 
     @BeforeAll
     static void beforeAll() throws IOException {
@@ -51,10 +50,9 @@ public class NaturalPersonServiceTest {
     void setup() {
 
         WebClient webClient = WebClient.builder().baseUrl(mockWebServer.url("/").toString()).build();
-        requestService = new NaturalPersonRequestServiceImpl(webClient);
-        naturalPersonRequest = new NaturalPersonRequest();
-        String sts = "59 ут 123456";
-        naturalPersonRequest.setSts(sts);
+        requestService = new LegalPersonRequestServiceImpl(webClient);
+        request = new LegalPersonRequest();
+        request.setInn(1234567890L);
 
     }
 
@@ -67,14 +65,14 @@ public class NaturalPersonServiceTest {
     @Test
     void transferValidNaturalPersonRequestTest() throws Exception {
 
-        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(naturalPersonRequest)).
+        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(request)).
                 setResponseCode(202).
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(response);
-        ResponseEntity<NaturalPersonRequest> result = requestService.transferClientRequest(naturalPersonRequest);
+        ResponseEntity<LegalPersonRequest> result = requestService.transferClientRequest(request);
 
-        assertThat(result.getBody().getSts(), is("59 ут 123456"));
+        assertThat(result.getBody().getInn(), is(1234567890L));
         assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
 
 
@@ -84,12 +82,12 @@ public class NaturalPersonServiceTest {
     @Test
     void getResponseIsNotNullTest() throws Exception {
 
-        NaturalPersonResponse response = new NaturalPersonResponse();
+        LegalPersonResponse response = new LegalPersonResponse();
         BigDecimal amountOfAccrual = new BigDecimal(28);
         BigDecimal amountOfPaid = new BigDecimal(28);
         int numberOfResolution = 321521;
         String articleOfKoap = "21.3";
-        response.setSts("59 ут 123456");
+        response.setInn(1234567890L);
         response.setAmountOfAccrual(amountOfAccrual);
         response.setArticleOfKoap(articleOfKoap);
         response.setAmountOfPaid(amountOfPaid);
@@ -100,10 +98,10 @@ public class NaturalPersonServiceTest {
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(mockResponse);
-        ResponseEntity<NaturalPersonResponse> resultResponse = requestService.getResponse(naturalPersonRequest);
+        ResponseEntity<LegalPersonResponse> resultResponse = requestService.getResponse(request);
 
         assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
-        assertThat(resultResponse.getBody().getSts(), is("59 ут 123456"));
+        assertThat(resultResponse.getBody().getInn(), is(1234567890L));
         assertThat(resultResponse.getBody().getAmountOfAccrual(), is(amountOfAccrual));
         assertThat(resultResponse.getBody().getAmountOfPaid(), is(amountOfPaid));
         assertThat(resultResponse.getBody().getArticleOfKoap(), is(articleOfKoap));
@@ -123,15 +121,11 @@ public class NaturalPersonServiceTest {
         mockWebServer.enqueue(mockResponse);
         mockWebServer.enqueue(mockResponse);
 
-        ResponseWithFineNullException thrown = assertThrows(ResponseWithFineNullException.class,
-                () -> requestService.getResponse(naturalPersonRequest));
+        ResponseWithFineNullException thrown = assertThrows(ResponseWithFineNullException.class, () -> requestService.getResponse(request));
 
-        String errorMessage = "No information found for '59 ут 123456'";
+        String errorMessage = "No information found for '1234567890'";
         Assertions.assertEquals(errorMessage, thrown.getMessage());
 
-        /*RecordedRequest request = mockWebServer.takeRequest(4, TimeUnit.SECONDS);
-        assertEquals("/natural_person/get_response", request.getPath());
-        assertEquals("POST", request.getMethod());*/
 
     }
 
@@ -146,6 +140,7 @@ public class NaturalPersonServiceTest {
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(response);
+
         ResponseEntity<Void> deleteResult = requestService.deleteResponse(id);
         assertThat(deleteResult.getStatusCode(), is(HttpStatus.OK));
 
