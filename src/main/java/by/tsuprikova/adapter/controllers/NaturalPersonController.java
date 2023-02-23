@@ -4,6 +4,7 @@ package by.tsuprikova.adapter.controllers;
 import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 
+import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,7 +31,7 @@ public class NaturalPersonController {
 
 
     @PostMapping(value = "/get_response")
-    public ResponseEntity<ResponseWithFine> getResponseWithFine(@Valid @RequestBody NaturalPersonRequest clientReq) {
+    public ResponseEntity<NaturalPersonResponse> getResponseWithFine(@Valid @RequestBody NaturalPersonRequest clientReq) {
         return naturalPersonRequestService.getResponseWithFineFromSMV(clientReq);
 
     }

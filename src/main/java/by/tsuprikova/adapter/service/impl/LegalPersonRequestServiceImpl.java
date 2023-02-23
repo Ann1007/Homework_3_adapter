@@ -56,8 +56,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 onStatus(
                         HttpStatus::is4xxClientError,
                         response ->
-                                Mono.error(new ResponseWithFineNullException("No information found for  "
-                                        + legalPersonRequest.getInn()))).
+                                Mono.error(new ResponseWithFineNullException("No information found for '" + legalPersonRequest.getInn()+"'"))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
@@ -67,16 +66,16 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                         .filter(throwable -> throwable instanceof ResponseWithFineNullException).
                         onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                         {
-                            throw new ResponseWithFineNullException("No information found for  "
-                                    + legalPersonRequest.getInn());
+                            throw new ResponseWithFineNullException("No information found for '" + legalPersonRequest.getInn()+"'");
                         })).block();
     }
 
 
-    public void deleteResponse(UUID id) {
+    public ResponseEntity<Void> deleteResponse(UUID id) {
 
         log.info("sending id={} for delete legal person response from smv ", id);
-        webClient.delete()
+
+        return webClient.delete()
                 .uri("/legal_person/response/{id}", id).
                 retrieve().
                 onStatus(

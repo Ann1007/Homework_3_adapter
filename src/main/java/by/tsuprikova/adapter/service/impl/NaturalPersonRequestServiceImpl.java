@@ -3,6 +3,7 @@ package by.tsuprikova.adapter.service.impl;
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
 import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
+import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import lombok.AllArgsConstructor;
@@ -45,7 +46,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     }
 
 
-    public ResponseEntity<ResponseWithFine> getResponse(NaturalPersonRequest naturalPersonRequest) {
+    public ResponseEntity<NaturalPersonResponse> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
         return webClient.post().
                 uri("/natural_person/get_response").
@@ -54,20 +55,18 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is4xxClientError,
                         response ->
-                                Mono.error(new ResponseWithFineNullException("No information found for  "
-                                        + naturalPersonRequest.getSts()))).
+                                Mono.error(new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'"))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
                                 Mono.error(new SmvServerException("SMV service is unavailable"))).
-                toEntity(ResponseWithFine.class).
+                toEntity(NaturalPersonResponse.class).
                 retryWhen(
                         Retry.backoff(3, Duration.ofSeconds(2))
                                 .filter(throwable -> throwable instanceof ResponseWithFineNullException).
                                 onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 {
-                                    throw new ResponseWithFineNullException("No information found for  "
-                                            + naturalPersonRequest.getSts());
+                                    throw new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
                                 })).block();
 
     }
@@ -76,7 +75,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     public ResponseEntity<Void> deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
-     return    webClient.delete()
+        return webClient.delete()
                 .uri("/natural_person/response/{id}", id).
                 retrieve().
                 onStatus(
@@ -89,10 +88,10 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
 
     @Override
-    public ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest) {
+    public ResponseEntity<NaturalPersonResponse> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest) {
 
         ResponseEntity<NaturalPersonRequest> responseEntity = transferClientRequest(naturalPersonRequest);
-        ResponseEntity<ResponseWithFine> responseWithFineEntity = null;
+        ResponseEntity<NaturalPersonResponse> responseWithFineEntity = null;
 
         if (responseEntity.getStatusCode() == HttpStatus.ACCEPTED) {
 

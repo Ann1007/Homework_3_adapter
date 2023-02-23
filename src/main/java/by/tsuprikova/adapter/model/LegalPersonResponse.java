@@ -9,5 +9,5 @@ import lombok.RequiredArgsConstructor;
 public class LegalPersonResponse extends ResponseWithFine {
 
     @Schema(description = "идентификационный номер налогоплательщика")
-    private Long INN;
+    private Long inn;
 }

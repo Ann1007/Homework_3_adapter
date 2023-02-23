@@ -13,7 +13,7 @@ public interface LegalPersonRequestService {
 
     ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest);
 
-    void deleteResponse(UUID id);
+    ResponseEntity<Void> deleteResponse(UUID id);
 
     ResponseEntity<LegalPersonResponse> getResponseWithFineFromSMV(LegalPersonRequest legalPersonRequest);
 }
