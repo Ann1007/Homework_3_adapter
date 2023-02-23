@@ -1,6 +1,7 @@
 package by.tsuprikova.adapter.controllers;
 
 import by.tsuprikova.adapter.model.LegalPersonRequest;
+import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +24,7 @@ public class LegalPersonController {
 
 
     @PostMapping("/get_response")
-    public ResponseEntity<ResponseWithFine> getResponse(@Valid @RequestBody LegalPersonRequest request) {
+    public ResponseEntity<LegalPersonResponse> getResponse(@Valid @RequestBody LegalPersonRequest request) {
 
         return legalPersonRequestService.getResponseWithFineFromSMV(request);
 

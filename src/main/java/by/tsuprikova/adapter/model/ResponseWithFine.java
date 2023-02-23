@@ -20,8 +20,6 @@ public class ResponseWithFine {
     private BigDecimal amountOfPaid;
     @Schema(description = "номер постановления")
     private int numberOfResolution;
-    @Schema(description = "СТС(свидетельство транспортного средства)", example = "98 ут 253901")
-    private String sts;
     @Schema(description = "дата постановления")
     private Date dateOfResolution;
     @Schema(description = "статья КоАП")

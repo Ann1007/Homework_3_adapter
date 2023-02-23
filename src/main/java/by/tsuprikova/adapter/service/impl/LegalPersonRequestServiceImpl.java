@@ -3,7 +3,7 @@ package by.tsuprikova.adapter.service.impl;
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
 import by.tsuprikova.adapter.exceptions.SmvServerException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
-import by.tsuprikova.adapter.model.ResponseWithFine;
+import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
 
 
     public ResponseEntity<LegalPersonRequest> transferClientRequest(LegalPersonRequest legalPersonRequest) {
-        log.info("sending legal person request with sts{} for saving on smv", legalPersonRequest.getSts());
+        log.info("sending legal person request with inn ='{}' for saving on smv", legalPersonRequest.getInn());
         return webClient.
                 post().
                 uri("/legal_person/save_request")
@@ -47,7 +47,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
 
 
     @Override
-    public ResponseEntity<ResponseWithFine> getResponse(LegalPersonRequest legalPersonRequest) {
+    public ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
 
         return webClient.post().
                 uri("/legal_person/get_response").
@@ -57,18 +57,18 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                         HttpStatus::is4xxClientError,
                         response ->
                                 Mono.error(new ResponseWithFineNullException("No information found for  "
-                                        + legalPersonRequest.getSts()))).
+                                        + legalPersonRequest.getInn()))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
                                 Mono.error(new SmvServerException("SMV service is unavailable"))).
-                toEntity(ResponseWithFine.class).
+                toEntity(LegalPersonResponse.class).
                 retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
                         .filter(throwable -> throwable instanceof ResponseWithFineNullException).
                         onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                         {
                             throw new ResponseWithFineNullException("No information found for  "
-                                    + legalPersonRequest.getSts());
+                                    + legalPersonRequest.getInn());
                         })).block();
     }
 
@@ -89,15 +89,15 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
 
 
     @Override
-    public ResponseEntity<ResponseWithFine> getResponseWithFineFromSMV(LegalPersonRequest legalPersonRequest) {
+    public ResponseEntity<LegalPersonResponse> getResponseWithFineFromSMV(LegalPersonRequest legalPersonRequest) {
 
         ResponseEntity<LegalPersonRequest> savedRequest = transferClientRequest(legalPersonRequest);
-        ResponseEntity<ResponseWithFine> responseWithFineEntity = null;
+        ResponseEntity<LegalPersonResponse> responseWithFineEntity = null;
 
         if (savedRequest.getStatusCode() == HttpStatus.ACCEPTED) {
 
             responseWithFineEntity = getResponse(legalPersonRequest);
-            log.info("get a legal person response for sts ='{}' from SMV", legalPersonRequest.getSts());
+            log.info("get a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
 
             if (responseWithFineEntity != null) {
                 deleteResponse(responseWithFineEntity.getBody().getId());

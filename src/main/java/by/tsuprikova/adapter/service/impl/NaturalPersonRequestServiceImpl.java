@@ -37,7 +37,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is  is unavailable"))).
+                                Mono.error(new SmvServerException("SMV service is unavailable"))).
                 toEntity(NaturalPersonRequest.class).
                 block();
 
