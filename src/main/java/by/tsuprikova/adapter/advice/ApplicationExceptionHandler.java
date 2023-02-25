@@ -41,7 +41,7 @@ public class ApplicationExceptionHandler {
     public ResponseEntity<ErrorMessage> handleResponseWithFineNullException(ResponseWithFineNullException ex) {
         log.error(ex.getMessage());
         ErrorMessage errorMessage = new ErrorMessage(ex.getMessage());
-        return new ResponseEntity<>(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
 
     }
 
@@ -50,7 +50,7 @@ public class ApplicationExceptionHandler {
     @ExceptionHandler({SmvServerException.class, ConnectException.class})
     public ResponseEntity<ErrorMessage> handleSmvServerException(Exception e) {
         log.error(e.getMessage());
-        ErrorMessage errorMessage = new ErrorMessage("SMV service is  is unavailable");
+        ErrorMessage errorMessage = new ErrorMessage("SMV service is unavailable");
         return new ResponseEntity<>(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
