@@ -19,7 +19,7 @@ public class SwaggerConfig {
                                 .title("ADAPTER SERVICE")
                                 .version("1.0.0")
                                 .description("The adapter service accepts the request, " +
-                                        "then interacts with the second service and gives a response")
+                                        "then interacts with the second service(smv) and gives a response")
                                 .contact(new Contact().name("Ann"))
 
                 );

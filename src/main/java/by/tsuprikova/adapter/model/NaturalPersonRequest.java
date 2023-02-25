@@ -11,8 +11,8 @@ import javax.validation.constraints.NotBlank;
 @RequiredArgsConstructor
 public class NaturalPersonRequest {
 
-    @Schema(description = "СТС(свидетельство транспортного средства)", example = "98 ут 253901")
-    @NotBlank(message = "поле стс не может быть пустое")
+    @Schema(description = "vehicle certificate (СТС - свидетельство транспортного средства)", example = "98 ут 253901")
+    @NotBlank(message = "the sts field cannot be empty")
     private String sts;
 
 

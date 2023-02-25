@@ -14,15 +14,15 @@ public class ResponseWithFine {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private UUID id;
-    @Schema(description = "сумма по начислению")
+    @Schema(description = "amount of accrual (сумма по начислению)")
     private BigDecimal amountOfAccrual;
-    @Schema(description = "сумма к оплате")
+    @Schema(description = "amount of paid(сумма к оплате)")
     private BigDecimal amountOfPaid;
-    @Schema(description = "номер постановления")
+    @Schema(description = "number of resolution(номер постановления)")
     private int numberOfResolution;
-    @Schema(description = "дата постановления")
+    @Schema(description = "date of resolution(дата постановления)")
     private Date dateOfResolution;
-    @Schema(description = "статья КоАП")
+    @Schema(description = "article of Koap(статья КоАП)")
     private String articleOfKoap;
 
 

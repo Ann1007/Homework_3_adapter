@@ -7,6 +7,6 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 public class NaturalPersonResponse extends ResponseWithFine {
-    @Schema(description = "СТС(свидетельство транспортного средства)", example = "98 ут 253901")
+    @Schema(description = "vehicle certificate (СТС - свидетельство транспортного средства)", example = "98 ут 253901")
     private String sts;
 }

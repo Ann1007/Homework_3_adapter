@@ -11,8 +11,8 @@ import javax.validation.constraints.Min;
 @RequiredArgsConstructor
 public class LegalPersonRequest {
 
-    @Schema(description = "идентификационный номер налогоплательщика")
-    @Min(value = 1_000_000_000L, message = "поле ИНН должно состоять минимум из 10 цифр")
+    @Schema(description = "taxpayer identification number(ИНН - идентификационный номер налогоплательщика)")
+    @Min(value = 1_000_000_000L, message = "the inn field must consist of at least 10 digits")
     private Long inn;
 
 }
