@@ -94,7 +94,7 @@ public class NaturalPersonControllerTest {
                         contentType(MediaType.APPLICATION_JSON).
                         content(objectMapper.writeValueAsString(invalidRequest))).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
-                andExpect(MockMvcResultMatchers.jsonPath("$.sts").value("поле стс не может быть пустое")).
+                andExpect(MockMvcResultMatchers.jsonPath("$.sts").value("the sts field cannot be empty")).
                 andExpect(mvcResult -> mvcResult.getResolvedException().getClass().equals(MethodArgumentNotValidException.class));
 
     }
