@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Data
 @RequiredArgsConstructor
-public class ResponseWithFine {
+public abstract class Response {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private UUID id;

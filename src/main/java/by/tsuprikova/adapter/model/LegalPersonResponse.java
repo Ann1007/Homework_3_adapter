@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor
-public class LegalPersonResponse extends ResponseWithFine {
+public class LegalPersonResponse extends Response {
 
     @Schema(description = "taxpayer identification number(ИНН - идентификационный номер налогоплательщика)")
     private Long inn;

@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
 
-
 @Data
 @RequiredArgsConstructor
 public class NaturalPersonRequest {

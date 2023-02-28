@@ -1,6 +1,6 @@
 package by.tsuprikova.adapter.exceptions;
 
-public class ResponseWithFineNullException extends RuntimeException{
+public class ResponseWithFineNullException extends RuntimeException {
     public ResponseWithFineNullException() {
     }
 

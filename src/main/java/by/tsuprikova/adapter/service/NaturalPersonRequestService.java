@@ -2,7 +2,6 @@ package by.tsuprikova.adapter.service;
 
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.NaturalPersonResponse;
-import by.tsuprikova.adapter.model.ResponseWithFine;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;

@@ -1,10 +1,9 @@
 package by.tsuprikova.adapter.service.impl;
 
 import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
-import by.tsuprikova.adapter.exceptions.SmvServerException;
+import by.tsuprikova.adapter.exceptions.SmvServiceException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.NaturalPersonResponse;
-import by.tsuprikova.adapter.model.ResponseWithFine;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +37,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is unavailable"))).
+                                Mono.error(new SmvServiceException("SMV service is unavailable"))).
                 toEntity(NaturalPersonRequest.class).
                 block();
 
@@ -59,7 +58,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is unavailable"))).
+                                Mono.error(new SmvServiceException("SMV service is unavailable"))).
                 toEntity(NaturalPersonResponse.class).
                 retryWhen(
                         Retry.backoff(3, Duration.ofSeconds(2))
@@ -81,7 +80,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
-                                Mono.error(new SmvServerException("SMV service is unavailable"))).
+                                Mono.error(new SmvServiceException("SMV service is unavailable"))).
                 toEntity(Void.class).
                 block();
     }
