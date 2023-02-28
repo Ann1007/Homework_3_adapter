@@ -32,7 +32,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
         return webClient.
                 post().
-                uri("/natural_person/save_request").
+                uri("/natural_person/request").
                 bodyValue(naturalPersonRequest).
                 retrieve().
                 onStatus(
@@ -49,7 +49,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     public ResponseEntity<NaturalPersonResponse> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
         return webClient.post().
-                uri("/natural_person/get_response").
+                uri("/natural_person/response").
                 bodyValue(naturalPersonRequest).
                 retrieve().
                 onStatus(

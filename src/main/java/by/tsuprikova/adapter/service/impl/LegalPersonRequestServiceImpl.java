@@ -32,7 +32,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
         log.info("sending legal person request with inn ='{}' for saving on smv", legalPersonRequest.getInn());
         return webClient.
                 post().
-                uri("/legal_person/save_request")
+                uri("/legal_person/request")
                 .accept(MediaType.APPLICATION_JSON).
                 bodyValue(legalPersonRequest).
                 retrieve().
@@ -50,7 +50,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     public ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
 
         return webClient.post().
-                uri("/legal_person/get_response").
+                uri("/legal_person/response").
                 bodyValue(legalPersonRequest).
                 retrieve().
                 onStatus(

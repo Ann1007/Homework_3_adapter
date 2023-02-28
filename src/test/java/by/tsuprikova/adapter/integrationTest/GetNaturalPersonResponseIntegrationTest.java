@@ -117,7 +117,42 @@ public class GetNaturalPersonResponseIntegrationTest {
 
     }
 
+ /* @Test
+    void get1ResponseWithFineIntegrationTest() throws Exception {
+        NaturalPersonRequest naturalPersonRequest = new NaturalPersonRequest();
+        String sts = "59 ут 123456";
+        naturalPersonRequest.setSts(sts);
 
+        NaturalPersonResponse responseWithFine = new NaturalPersonResponse();
+        UUID id = UUID.randomUUID();
+        responseWithFine.setSts(sts);
+        responseWithFine.setAmountOfAccrual(new BigDecimal(28));
+        responseWithFine.setArticleOfKoap("21.3");
+        responseWithFine.setAmountOfPaid(new BigDecimal(28));
+        responseWithFine.setNumberOfResolution(321521);
+        responseWithFine.setId(id);
+
+        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(responseWithFine)).
+                setResponseCode(200).
+                addHeader("Content-Type", "application/json"));
+
+        ResponseEntity<NaturalPersonResponse> resultResponse = requestService.getResponseWithFineFromSMV(naturalPersonRequest);
+
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/adapter/natural_person/get_response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(naturalPersonRequest))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
+                andReturn();
+
+        String resultContext = mvcResult.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        ResponseEntity<NaturalPersonResponse> resultResponseWithFine = objectMapper.readValue(resultContext, ResponseEntity.class);
+        assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
+        assertThat(resultResponse.getBody().getSts(), is(sts));
+        Assertions.assertNotNull(resultResponseWithFine);
+        assertEquals(resultResponse.getBody().getSts(), resultResponseWithFine.getBody().getSts());
+        assertEquals(resultResponse.getBody().getAmountOfPaid(), resultResponseWithFine.getBody().getAmountOfPaid());
+
+    }*/
 
 
 }

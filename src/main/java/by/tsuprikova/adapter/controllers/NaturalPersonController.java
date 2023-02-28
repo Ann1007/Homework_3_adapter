@@ -24,7 +24,7 @@ import javax.validation.Valid;
 @Slf4j
 @Tag(name = "Controller for natural person request", description = "accepts a request from natural person and returns a response with a fine")
 
-@RequestMapping("/adapter/natural_person")
+@RequestMapping("api/v1/adapter/natural_person")
 public class NaturalPersonController {
 
     private final NaturalPersonRequestService naturalPersonRequestService;
@@ -39,7 +39,7 @@ public class NaturalPersonController {
             @ApiResponse(responseCode = "404", description = "The response is not found", content = @Content),
             @ApiResponse(responseCode = "500", description = "SMV service is  is unavailable", content = @Content)})
 
-    @PostMapping(value = "/get_response")
+    @PostMapping(value = "/response")
     public ResponseEntity<NaturalPersonResponse> getResponseWithFine(@Valid @RequestBody NaturalPersonRequest clientReq) {
         return naturalPersonRequestService.getResponseWithFineFromSMV(clientReq);
 

@@ -2,7 +2,6 @@ package by.tsuprikova.adapter.controllers;
 
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
-import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,7 +22,7 @@ import javax.validation.Valid;
 @RequiredArgsConstructor
 @Tag(name = "Controller for legal person request", description = "accepts a request from legal person and returns a response with a fine")
 
-@RequestMapping("/adapter/legal_person")
+@RequestMapping("api/v1/adapter/legal_person")
 public class LegalPersonController {
 
     private final LegalPersonRequestService legalPersonRequestService;
@@ -37,7 +36,7 @@ public class LegalPersonController {
             @ApiResponse(responseCode = "404", description = "The response is not found", content = @Content),
             @ApiResponse(responseCode = "500", description = "SMV service is  is unavailable", content = @Content)})
 
-    @PostMapping("/get_response")
+    @PostMapping("/response")
     public ResponseEntity<LegalPersonResponse> getResponse(@Valid @RequestBody LegalPersonRequest request) {
 
         return legalPersonRequestService.getResponseWithFineFromSMV(request);

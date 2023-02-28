@@ -67,7 +67,7 @@ public class LegalPersonControllerTest {
 
         Mockito.when(requestService.getResponseWithFineFromSMV(any(LegalPersonRequest.class))).thenReturn(response);
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/adapter/legal_person/get_response").
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
                         contentType(MediaType.APPLICATION_JSON).
                         content(objectMapper.writeValueAsString(request))).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
@@ -94,7 +94,7 @@ public class LegalPersonControllerTest {
         Long inn = 890L;
         invalidRequest.setInn(inn);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/adapter/legal_person/get_response").
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
                         contentType(MediaType.APPLICATION_JSON).
                         content(objectMapper.writeValueAsString(invalidRequest))).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
