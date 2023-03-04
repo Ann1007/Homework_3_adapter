@@ -5,9 +5,12 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
+import javax.xml.bind.annotation.XmlRootElement;
+
 
 @Data
 @RequiredArgsConstructor
+@XmlRootElement(name = "naturalPersonRequest")
 public class NaturalPersonRequest {
 
     @Schema(description = "vehicle certificate (СТС - свидетельство транспортного средства)", example = "98 ут 253901")

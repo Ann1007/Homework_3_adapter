@@ -6,9 +6,11 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import javax.validation.constraints.Min;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @Data
 @RequiredArgsConstructor
+@XmlRootElement(name = "legalPersonRequest")
 public class LegalPersonRequest {
 
     @Schema(description = "taxpayer identification number(ИНН - идентификационный номер налогоплательщика)")

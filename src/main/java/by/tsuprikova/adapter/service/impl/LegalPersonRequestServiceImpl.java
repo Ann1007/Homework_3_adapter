@@ -31,8 +31,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
         log.info("sending legal person request with inn ='{}' for saving on smv", legalPersonRequest.getInn());
         return webClient.
                 post().
-                uri("/legal_person/request")
-                .accept(MediaType.APPLICATION_JSON).
+                uri("/legal_person/request").
                 bodyValue(legalPersonRequest).
                 retrieve().
                 onStatus(
