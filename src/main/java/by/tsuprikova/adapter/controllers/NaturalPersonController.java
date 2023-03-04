@@ -6,6 +6,7 @@ import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,10 +38,13 @@ public class NaturalPersonController {
                             schema = @Schema(implementation = NaturalPersonResponse.class))}),
             @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
             @ApiResponse(responseCode = "404", description = "The response is not found", content = @Content),
-            @ApiResponse(responseCode = "500", description = "SMV service is  is unavailable", content = @Content)})
+            @ApiResponse(responseCode = "500", description = "SMV service is unavailable", content = @Content)})
 
     @PostMapping(value = "/response")
-    public ResponseEntity<NaturalPersonResponse> getResponseWithFine(@Valid @RequestBody NaturalPersonRequest clientReq) {
+    public ResponseEntity<NaturalPersonResponse> getResponseWithFine(@RequestBody(description = "natural person request", required = true,
+            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = NaturalPersonRequest.class)),
+                    @Content(mediaType = "application/xml", schema = @Schema(implementation = NaturalPersonRequest.class))})
+                                                                     @Valid @org.springframework.web.bind.annotation.RequestBody NaturalPersonRequest clientReq) {
         return naturalPersonRequestService.getResponseWithFineFromSMV(clientReq);
 
     }
