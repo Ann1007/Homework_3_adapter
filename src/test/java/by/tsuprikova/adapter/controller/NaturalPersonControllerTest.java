@@ -1,10 +1,13 @@
 package by.tsuprikova.adapter.controller;
 
+import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Cleanup;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +23,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
@@ -42,15 +47,19 @@ public class NaturalPersonControllerTest {
     @MockBean
     private NaturalPersonRequestService requestService;
 
+    private NaturalPersonRequest request;
 
-    @Test
-    void GetResponseWithValidRequestTest() throws Exception {
+    private NaturalPersonResponse naturalPersonResponse;
 
-        NaturalPersonRequest request = new NaturalPersonRequest();
+
+
+    @BeforeEach
+    void init() {
+        request = new NaturalPersonRequest();
         String sts = "59 ут 123456";
         request.setSts(sts);
 
-        NaturalPersonResponse naturalPersonResponse = new NaturalPersonResponse();
+        naturalPersonResponse = new NaturalPersonResponse();
         BigDecimal amountOfAccrual = new BigDecimal(28);
         BigDecimal amountOfPaid = new BigDecimal(28);
         int numberOfResolution = 321521;
@@ -60,6 +69,13 @@ public class NaturalPersonControllerTest {
         naturalPersonResponse.setArticleOfKoap(articleOfKoap);
         naturalPersonResponse.setAmountOfPaid(amountOfPaid);
         naturalPersonResponse.setNumberOfResolution(numberOfResolution);
+
+    }
+
+
+    @Test
+    void getNotNullResponseWithValidJsonRequestTest() throws Exception {
+
         ResponseEntity<NaturalPersonResponse> response = new ResponseEntity<>(naturalPersonResponse, HttpStatus.OK);
 
         Mockito.when(requestService.getResponseWithFineFromSMV(any(NaturalPersonRequest.class))).thenReturn(response);
@@ -85,17 +101,88 @@ public class NaturalPersonControllerTest {
 
 
     @Test
-    void GetResponseWithInvalidRequestTest() throws Exception {
+    void getNotNullResponseWithValidXmlRequestTest() throws Exception {
 
-        NaturalPersonRequest invalidRequest = new NaturalPersonRequest();
+        ResponseEntity<NaturalPersonResponse> response = new ResponseEntity<>(naturalPersonResponse, HttpStatus.OK);
+
+        Mockito.when(requestService.getResponseWithFineFromSMV(any(NaturalPersonRequest.class))).thenReturn(response);
+
+        JAXBContext context = JAXBContext.newInstance(NaturalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_XML_VALUE).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
+                andReturn();
+
+        String resultContext = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        NaturalPersonResponse resultResponse = objectMapper.readValue(resultContext, NaturalPersonResponse.class);
+
+        Assertions.assertNotNull(resultResponse);
+        Assertions.assertEquals("59 ут 123456", resultResponse.getSts());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfAccrual());
+        Assertions.assertEquals(321521, resultResponse.getNumberOfResolution());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfPaid());
+        Assertions.assertEquals("21.3", resultResponse.getArticleOfKoap());
+
+
+    }
+
+
+    @Test
+    void checkBadRequestTest() throws Exception {
+
+        NaturalPersonRequest  invalidRequest = new NaturalPersonRequest();
         invalidRequest.setSts("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
                         contentType(MediaType.APPLICATION_JSON).
                         content(objectMapper.writeValueAsString(invalidRequest))).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
-                andExpect(MockMvcResultMatchers.jsonPath("$.sts").value("the sts field cannot be empty")).
-                andExpect(mvcResult -> mvcResult.getResolvedException().getClass().equals(MethodArgumentNotValidException.class));
+                andExpect(MockMvcResultMatchers.jsonPath("$.sts").value("the sts field cannot be empty"));
+
+        JAXBContext context = JAXBContext.newInstance(NaturalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(invalidRequest, sw);
+        String xmlRequest = sw.toString();
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_XML_VALUE).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
+                andExpect(MockMvcResultMatchers.jsonPath("$.sts").value("the sts field cannot be empty"));
+
+    }
+
+
+    @Test
+    void getNullResponseTest() throws Exception {
+
+        Mockito.when(requestService.getResponseWithFineFromSMV(any(NaturalPersonRequest.class))).thenThrow(ResponseWithFineNullException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(request))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value()));
+
+        JAXBContext context = JAXBContext.newInstance(NaturalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_XML_VALUE).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value()));
 
     }
 

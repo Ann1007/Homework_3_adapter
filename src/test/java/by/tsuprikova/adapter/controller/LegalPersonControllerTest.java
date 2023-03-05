@@ -1,12 +1,13 @@
 package by.tsuprikova.adapter.controller;
 
+import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
-import by.tsuprikova.adapter.model.NaturalPersonRequest;
-import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Cleanup;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +23,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
@@ -45,15 +48,16 @@ public class LegalPersonControllerTest {
     @MockBean
     private LegalPersonRequestService requestService;
 
+    private LegalPersonRequest request;
 
-    @Test
-    void GetResponseWithValidRequestTest() throws Exception {
+    LegalPersonResponse legalPersonResponse;
 
-        LegalPersonRequest request = new LegalPersonRequest();
+    @BeforeEach
+    void init() {
+        request = new LegalPersonRequest();
         Long inn = 1234567890L;
         request.setInn(inn);
-
-        LegalPersonResponse legalPersonResponse = new LegalPersonResponse();
+        legalPersonResponse = new LegalPersonResponse();
         BigDecimal amountOfAccrual = new BigDecimal(28);
         BigDecimal amountOfPaid = new BigDecimal(28);
         int numberOfResolution = 321521;
@@ -63,6 +67,12 @@ public class LegalPersonControllerTest {
         legalPersonResponse.setArticleOfKoap(articleOfKoap);
         legalPersonResponse.setAmountOfPaid(amountOfPaid);
         legalPersonResponse.setNumberOfResolution(numberOfResolution);
+    }
+
+
+    @Test
+    void getResponseWithValidJsonRequestTest() throws Exception {
+
         ResponseEntity<LegalPersonResponse> response = new ResponseEntity<>(legalPersonResponse, HttpStatus.OK);
 
         Mockito.when(requestService.getResponseWithFineFromSMV(any(LegalPersonRequest.class))).thenReturn(response);
@@ -77,7 +87,40 @@ public class LegalPersonControllerTest {
         LegalPersonResponse resultResponse = objectMapper.readValue(resultContext, LegalPersonResponse.class);
 
         Assertions.assertNotNull(resultResponse);
-        Assertions.assertEquals(inn, resultResponse.getInn());
+        Assertions.assertEquals(1234567890L, resultResponse.getInn());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfAccrual());
+        Assertions.assertEquals(321521, resultResponse.getNumberOfResolution());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfPaid());
+        Assertions.assertEquals("21.3", resultResponse.getArticleOfKoap());
+
+    }
+
+
+    @Test
+    void getResponseWithValidXmlRequestTest() throws Exception {
+
+        ResponseEntity<LegalPersonResponse> response = new ResponseEntity<>(legalPersonResponse, HttpStatus.OK);
+
+        Mockito.when(requestService.getResponseWithFineFromSMV(any(LegalPersonRequest.class))).thenReturn(response);
+
+        JAXBContext context = JAXBContext.newInstance(LegalPersonRequest.class);
+        Marshaller marshaller = context.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        marshaller.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_XML_VALUE).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
+                andReturn();
+
+        String resultContext = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        LegalPersonResponse resultResponse = objectMapper.readValue(resultContext, LegalPersonResponse.class);
+
+        Assertions.assertNotNull(resultResponse);
+        Assertions.assertEquals(1234567890L, resultResponse.getInn());
         Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfAccrual());
         Assertions.assertEquals(321521, resultResponse.getNumberOfResolution());
         Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfPaid());
@@ -88,7 +131,7 @@ public class LegalPersonControllerTest {
 
 
     @Test
-    void GetResponseWithInvalidRequestTest() throws Exception {
+    void checkInvalidRequestTest() throws Exception {
 
         LegalPersonRequest invalidRequest = new LegalPersonRequest();
         Long inn = 890L;
@@ -98,8 +141,47 @@ public class LegalPersonControllerTest {
                         contentType(MediaType.APPLICATION_JSON).
                         content(objectMapper.writeValueAsString(invalidRequest))).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
-                andExpect(MockMvcResultMatchers.jsonPath("$.inn").value("the inn field must consist of at least 10 digits")).
-                andExpect(mvcResult -> mvcResult.getResolvedException().getClass().equals(MethodArgumentNotValidException.class));
+                andExpect(MockMvcResultMatchers.jsonPath("$.inn").value("the inn field must consist of at least 10 digits"));
+
+        JAXBContext context = JAXBContext.newInstance(LegalPersonRequest.class);
+        Marshaller marshaller = context.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        marshaller.marshal(invalidRequest, sw);
+        String xmlRequest = sw.toString();
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_XML_VALUE).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
+                andExpect(MockMvcResultMatchers.jsonPath("$.inn").value("the inn field must consist of at least 10 digits"));
 
     }
+
+
+    @Test
+    void getNullResponseTest() throws Exception {
+
+        Mockito.when(requestService.getResponseWithFineFromSMV(any(LegalPersonRequest.class))).thenThrow(ResponseWithFineNullException.class);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(request))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value()));
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(LegalPersonRequest.class);
+        Marshaller marshaller = jaxbContext.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        marshaller.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_XML_VALUE).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value()));
+
+
+    }
+
 }

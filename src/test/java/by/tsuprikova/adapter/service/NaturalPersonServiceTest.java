@@ -5,6 +5,7 @@ import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.service.impl.NaturalPersonRequestServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Cleanup;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.*;
@@ -16,7 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -39,7 +43,8 @@ public class NaturalPersonServiceTest {
 
     private NaturalPersonRequestService requestService;
 
-    private NaturalPersonRequest naturalPersonRequest;
+    private NaturalPersonRequest request;
+
 
     @BeforeAll
     static void beforeAll() throws IOException {
@@ -52,9 +57,9 @@ public class NaturalPersonServiceTest {
 
         WebClient webClient = WebClient.builder().baseUrl(mockWebServer.url("/").toString()).build();
         requestService = new NaturalPersonRequestServiceImpl(webClient);
-        naturalPersonRequest = new NaturalPersonRequest();
+        request = new NaturalPersonRequest();
         String sts = "59 ут 123456";
-        naturalPersonRequest.setSts(sts);
+        request.setSts(sts);
 
     }
 
@@ -65,14 +70,14 @@ public class NaturalPersonServiceTest {
 
 
     @Test
-    void transferValidNaturalPersonRequestTest() throws Exception {
+    void transferValidJsonPersonRequestTest() throws Exception {
 
-        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(naturalPersonRequest)).
+        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(request)).
                 setResponseCode(202).
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(response);
-        ResponseEntity<NaturalPersonRequest> result = requestService.transferClientRequest(naturalPersonRequest);
+        ResponseEntity<NaturalPersonRequest> result = requestService.transferClientRequest(request);
 
         assertThat(result.getBody().getSts(), is("59 ут 123456"));
         assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
@@ -82,7 +87,30 @@ public class NaturalPersonServiceTest {
 
 
     @Test
-    void getResponseIsNotNullTest() throws Exception {
+    void transferValidXMLRequestTest() throws Exception {
+
+        JAXBContext context = JAXBContext.newInstance(NaturalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        MockResponse response = new MockResponse().setBody(xmlRequest).
+                setResponseCode(202).
+                addHeader("Content-Type", "application/xml");
+
+        mockWebServer.enqueue(response);
+        ResponseEntity<NaturalPersonRequest> result = requestService.transferClientRequest(request);
+
+        assertThat(result.getBody().getSts(), is("59 ут 123456"));
+        assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
+
+    }
+
+
+    @Test
+    void getNotNullResponseWithValidRequestTest() throws Exception {
 
         NaturalPersonResponse response = new NaturalPersonResponse();
         BigDecimal amountOfAccrual = new BigDecimal(28);
@@ -100,7 +128,7 @@ public class NaturalPersonServiceTest {
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(mockResponse);
-        ResponseEntity<NaturalPersonResponse> resultResponse = requestService.getResponse(naturalPersonRequest);
+        ResponseEntity<NaturalPersonResponse> resultResponse = requestService.getResponse(request);
 
         assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
         assertThat(resultResponse.getBody().getSts(), is("59 ут 123456"));
@@ -113,7 +141,7 @@ public class NaturalPersonServiceTest {
 
 
     @Test
-    void getResponseIsNullTest() throws Exception {
+    void getNullResponseTest() {
 
         MockResponse mockResponse = new MockResponse().
                 setResponseCode(404);
@@ -124,20 +152,15 @@ public class NaturalPersonServiceTest {
         mockWebServer.enqueue(mockResponse);
 
         ResponseWithFineNullException thrown = assertThrows(ResponseWithFineNullException.class,
-                () -> requestService.getResponse(naturalPersonRequest));
+                () -> requestService.getResponse(request));
 
         String errorMessage = "No information found for '59 ут 123456'";
         Assertions.assertEquals(errorMessage, thrown.getMessage());
-
-        /*RecordedRequest request = mockWebServer.takeRequest(4, TimeUnit.SECONDS);
-        assertEquals("/natural_person/get_response", request.getPath());
-        assertEquals("POST", request.getMethod());*/
-
     }
 
 
     @Test
-    void deleteResponseWithFineById() throws Exception {
+    void deleteResponseById() throws Exception {
 
         UUID id = UUID.randomUUID();
         ResponseEntity<Void> res = new ResponseEntity<>(HttpStatus.OK);

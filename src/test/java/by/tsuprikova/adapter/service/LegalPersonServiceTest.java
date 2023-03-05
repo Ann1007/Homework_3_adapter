@@ -5,6 +5,7 @@ import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.service.impl.LegalPersonRequestServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Cleanup;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.*;
@@ -16,7 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -63,9 +67,10 @@ public class LegalPersonServiceTest {
 
 
     @Test
-    void transferValidNaturalPersonRequestTest() throws Exception {
+    void transferValidJsonPersonRequestTest() throws Exception {
 
-        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(request)).
+        MockResponse response = new MockResponse().
+                setBody(objectMapper.writeValueAsString(request)).
                 setResponseCode(202).
                 addHeader("Content-Type", "application/json");
 
@@ -80,7 +85,31 @@ public class LegalPersonServiceTest {
 
 
     @Test
-    void getResponseIsNotNullTest() throws Exception {
+    void transferValidXmlPersonRequestTest() throws Exception {
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(LegalPersonRequest.class);
+        Marshaller marshaller = jaxbContext.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        marshaller.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        MockResponse response = new MockResponse().
+                setBody(xmlRequest).
+                setResponseCode(202).
+                addHeader("Content-Type", "application/xml");
+
+        mockWebServer.enqueue(response);
+        ResponseEntity<LegalPersonRequest> result = requestService.transferClientRequest(request);
+
+        assertThat(result.getBody().getInn(), is(1234567890L));
+        assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
+
+    }
+
+
+    @Test
+    void getNotNullResponseTest() throws Exception {
 
         LegalPersonResponse response = new LegalPersonResponse();
         BigDecimal amountOfAccrual = new BigDecimal(28);
@@ -111,7 +140,7 @@ public class LegalPersonServiceTest {
 
 
     @Test
-    void getResponseIsNullTest() throws Exception {
+    void getNullResponseTest() {
 
         MockResponse mockResponse = new MockResponse().
                 setResponseCode(404);
@@ -131,7 +160,7 @@ public class LegalPersonServiceTest {
 
 
     @Test
-    void deleteResponseWithFineById() throws Exception {
+    void deleteResponseById() throws Exception {
 
         UUID id = UUID.randomUUID();
         ResponseEntity<Void> res = new ResponseEntity<>(HttpStatus.OK);
