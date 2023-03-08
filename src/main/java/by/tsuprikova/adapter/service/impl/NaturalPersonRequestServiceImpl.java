@@ -7,14 +7,15 @@ import by.tsuprikova.adapter.model.NaturalPersonResponse;
 import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
 import java.util.UUID;
 
 
@@ -23,66 +24,60 @@ import java.util.UUID;
 @Slf4j
 public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestService {
 
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
+
+    private final RetryTemplate retryTemplate;
 
 
     public ResponseEntity<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
         log.info("Sending natural person request with sts ='{}' for saving on smv", naturalPersonRequest.getSts());
 
-        return webClient.
-                post().
-                uri("/natural_person/request").
-                bodyValue(naturalPersonRequest).
-                retrieve().
-                onStatus(
-                        HttpStatus::is5xxServerError,
-                        response ->
-                                Mono.error(new SmvServiceException("SMV service is unavailable"))).
-                toEntity(NaturalPersonRequest.class).
-                block();
+        ResponseEntity<NaturalPersonRequest> request = null;
+        try {
+            request = retryTemplate.execute(retry ->
+                    restTemplate.postForEntity("/natural_person/request", naturalPersonRequest, NaturalPersonRequest.class));
 
+        } catch (HttpServerErrorException e) {
+            throw new SmvServiceException("SMV service is unavailable");
+
+        }
+
+        return request;
 
     }
 
 
     public ResponseEntity<NaturalPersonResponse> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
-        return webClient.post().
-                uri("/natural_person/response").
-                bodyValue(naturalPersonRequest).
-                retrieve().
-                onStatus(
-                        HttpStatus::is4xxClientError,
-                        response ->
-                                Mono.error(new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'"))).
-                onStatus(
-                        HttpStatus::is5xxServerError,
-                        response ->
-                                Mono.error(new SmvServiceException("SMV service is unavailable"))).
-                toEntity(NaturalPersonResponse.class).
-                retryWhen(
-                        Retry.backoff(3, Duration.ofSeconds(2))
-                                .filter(throwable -> throwable instanceof ResponseWithFineNullException).
-                                onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                {
-                                    throw new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
-                                })).block();
+        ResponseEntity<NaturalPersonResponse> response = null;
+        try {
+            response = retryTemplate.execute(retryContext ->
+                    restTemplate.postForEntity("/natural_person/response", naturalPersonRequest, NaturalPersonResponse.class));
 
+        } catch (HttpClientErrorException e) {
+            throw new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
+
+        } catch (HttpServerErrorException e) {
+            throw new SmvServiceException("SMV service is unavailable");
+        }
+        return response;
     }
 
 
     public ResponseEntity<Void> deleteResponse(UUID id) {
-        log.info("Sending id='{}' for delete natural person response from smv ", id);
 
-        return webClient.delete()
-                .uri("/natural_person/response/{id}", id).
-                retrieve().
-                onStatus(
-                        HttpStatus::is5xxServerError,
-                        response ->
-                                Mono.error(new SmvServiceException("SMV service is unavailable"))).
-                toEntity(Void.class).
-                block();
+        log.info("Sending id='{}' for delete natural person response from smv ", id);
+        ResponseEntity<Void> responseEntity = null;
+
+        try {
+            responseEntity = retryTemplate.execute(retry ->
+                    restTemplate.exchange("/natural_person/response/" + id, HttpMethod.DELETE, null, Void.class, UUID.class));
+
+        } catch (HttpServerErrorException e) {
+            throw new SmvServiceException("SMV service is unavailable");
+
+        }
+        return responseEntity;
     }
 
 
@@ -101,6 +96,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 deleteResponse(responseWithFineEntity.getBody().getId());
 
             }
+
         }
 
         return responseWithFineEntity;
