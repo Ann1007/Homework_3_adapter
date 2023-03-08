@@ -4,33 +4,35 @@ import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.NaturalPersonResponse;
-import by.tsuprikova.adapter.service.LegalPersonRequestService;
-import by.tsuprikova.adapter.service.NaturalPersonRequestService;
-import by.tsuprikova.adapter.service.impl.LegalPersonRequestServiceImpl;
-import by.tsuprikova.adapter.service.impl.NaturalPersonRequestServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -43,33 +45,81 @@ public class IntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static MockWebServer mockWebServer;
+    @Autowired
+    private RestTemplate restTemplate;
+
+    private MockRestServiceServer mockServer;
+
 
     @Autowired
     private MockMvc mockMvc;
 
-    private LegalPersonRequestService legalPersonRequestService;
-    private NaturalPersonRequestService requestService;
-
-
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        mockWebServer = new MockWebServer();
-        mockWebServer.start();
-    }
-
     @BeforeEach
-    void setup() {
+    public void createMock() {
 
-        WebClient webClient = WebClient.builder().baseUrl(mockWebServer.url("/").toString()).build();
-        legalPersonRequestService = new LegalPersonRequestServiceImpl(webClient);
-        requestService = new NaturalPersonRequestServiceImpl(webClient);
+        mockServer = MockRestServiceServer.createServer(restTemplate);
 
     }
 
-    @AfterAll
-    static void afterAll() throws IOException {
-        mockWebServer.shutdown();
+    @AfterEach
+    public void verifyMock() {
+        mockServer.verify();
+    }
+
+
+    @Test
+    void getNaturalPersonResponseTest() throws Exception {
+
+        NaturalPersonRequest request = new NaturalPersonRequest();
+        String sts = "59 ут 123456";
+        request.setSts(sts);
+
+        NaturalPersonResponse response = new NaturalPersonResponse();
+        UUID id = UUID.randomUUID();
+        response.setSts(sts);
+        response.setAmountOfAccrual(new BigDecimal(28));
+        response.setArticleOfKoap("21.3");
+        response.setAmountOfPaid(new BigDecimal(28));
+        response.setNumberOfResolution(321521);
+        response.setId(id);
+
+        String urlSaveRequest = "http://localhost:9000/api/v1/smv/natural_person/request";
+        String urlGetResponse = "http://localhost:9000/api/v1/smv/natural_person/response";
+        String urlDeleteResponse = "http://localhost:9000/api/v1/smv/natural_person/response/" + id;
+
+        mockServer.expect(once(), requestTo(urlSaveRequest)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.ACCEPTED).
+                        contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(request)));
+
+        mockServer.expect(once(), requestTo(urlGetResponse)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.OK).
+                        contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(response)));
+
+        mockServer.expect(once(), requestTo(urlDeleteResponse)).
+                andExpect(method(HttpMethod.DELETE)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.OK));
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(request))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
+                andReturn();
+
+        String resultContext = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        NaturalPersonResponse resultResponse = objectMapper.readValue(resultContext, NaturalPersonResponse.class);
+
+        Assertions.assertNotNull(resultResponse);
+        Assertions.assertEquals(sts, resultResponse.getSts());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfAccrual());
+        Assertions.assertEquals(321521, resultResponse.getNumberOfResolution());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfPaid());
+        Assertions.assertEquals("21.3", resultResponse.getArticleOfKoap());
+
+
     }
 
 
@@ -87,85 +137,50 @@ public class IntegrationTest {
         int numberOfResolution = 321521;
         String articleOfKoap = "21.3";
         legalPersonResponse.setInn(inn);
+        legalPersonResponse.setId(id);
         legalPersonResponse.setAmountOfAccrual(amountOfAccrual);
         legalPersonResponse.setArticleOfKoap(articleOfKoap);
         legalPersonResponse.setAmountOfPaid(amountOfPaid);
         legalPersonResponse.setNumberOfResolution(numberOfResolution);
 
-        mockWebServer.enqueue(new MockResponse().
-                setBody(objectMapper.writeValueAsString(request)).
-                setResponseCode(202).
-                addHeader("Content-Type", "application/json"));
+        String urlSaveRequest = "http://localhost:9000/api/v1/smv/legal_person/request";
+        String urlGetResponse = "http://localhost:9000/api/v1/smv/legal_person/response";
+        String urlDeleteResponse = "http://localhost:9000/api/v1/smv/legal_person/response/" + id;
 
-        ResponseEntity<LegalPersonRequest> result = legalPersonRequestService.transferClientRequest(request);
-        assertThat(result.getBody().getInn(), is(inn));
-        assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
+        mockServer.expect(once(), requestTo(urlSaveRequest)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.ACCEPTED).
+                        contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(request)));
 
-        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(legalPersonResponse)).
-                setResponseCode(200).
-                addHeader("Content-Type", "application/json"));
-        ResponseEntity<LegalPersonResponse> resultResponse = legalPersonRequestService.getResponse(result.getBody());
+        mockServer.expect(once(), requestTo(urlGetResponse)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.OK).
+                        contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(legalPersonResponse)));
 
-        assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
-        assertThat(resultResponse.getBody().getInn(), is(inn));
+        mockServer.expect(once(), requestTo(urlDeleteResponse)).
+                andExpect(method(HttpMethod.DELETE)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.OK));
 
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(request))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
+                andReturn();
 
-        ResponseEntity<Void> res = new ResponseEntity<>(HttpStatus.OK);
-        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(res)).
-                setResponseCode(200).
-                addHeader("Content-Type", "application/json"));
+        String resultContext = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        LegalPersonResponse resultResponse = objectMapper.readValue(resultContext, LegalPersonResponse.class);
 
-        ResponseEntity<Void> deleteResult = legalPersonRequestService.deleteResponse(id);
-        assertThat(deleteResult.getStatusCode(), is(HttpStatus.OK));
-
-    }
-
-
-    @Test
-    void getNaturalPersonResponseTest() throws Exception {
-
-        NaturalPersonRequest naturalPersonRequest = new NaturalPersonRequest();
-        String sts = "59 ут 123456";
-        naturalPersonRequest.setSts(sts);
-
-        NaturalPersonResponse responseWithFine = new NaturalPersonResponse();
-        UUID id = UUID.randomUUID();
-        responseWithFine.setSts(sts);
-        responseWithFine.setAmountOfAccrual(new BigDecimal(28));
-        responseWithFine.setArticleOfKoap("21.3");
-        responseWithFine.setAmountOfPaid(new BigDecimal(28));
-        responseWithFine.setNumberOfResolution(321521);
-        responseWithFine.setId(id);
-
-        mockWebServer.enqueue(new MockResponse().
-                setBody(objectMapper.writeValueAsString(naturalPersonRequest)).
-                setResponseCode(202).
-                addHeader("Content-Type", "application/json"));
-
-        ResponseEntity<NaturalPersonRequest> result = requestService.transferClientRequest(naturalPersonRequest);
-        assertThat(result.getBody().getSts(), is(sts));
-        assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
-
-        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(responseWithFine)).
-                setResponseCode(200).
-                addHeader("Content-Type", "application/json"));
-        ResponseEntity<NaturalPersonResponse> resultResponse = requestService.getResponse(result.getBody());
-
-        assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
-        assertThat(resultResponse.getBody().getSts(), is(sts));
-
-
-        ResponseEntity<Void> res = new ResponseEntity<>(HttpStatus.OK);
-        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(res)).
-                setResponseCode(200).
-                addHeader("Content-Type", "application/json"));
-
-        ResponseEntity<Void> deleteResult = requestService.deleteResponse(id);
-        assertThat(deleteResult.getStatusCode(), is(HttpStatus.OK));
+        Assertions.assertNotNull(resultResponse);
+        Assertions.assertEquals(inn, resultResponse.getInn());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfAccrual());
+        Assertions.assertEquals(321521, resultResponse.getNumberOfResolution());
+        Assertions.assertEquals(new BigDecimal(28), resultResponse.getAmountOfPaid());
+        Assertions.assertEquals("21.3", resultResponse.getArticleOfKoap());
 
 
     }
-
 
 
 }
