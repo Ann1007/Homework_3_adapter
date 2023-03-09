@@ -26,6 +26,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +52,6 @@ public class NaturalPersonControllerTest {
     private NaturalPersonRequest request;
 
     private NaturalPersonResponse naturalPersonResponse;
-
 
 
     @BeforeEach
@@ -116,12 +117,16 @@ public class NaturalPersonControllerTest {
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
                         contentType(MediaType.APPLICATION_XML_VALUE).
+                        accept(MediaType.APPLICATION_XML_VALUE).
                         content(xmlRequest)).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
                 andReturn();
 
         String resultContext = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
-        NaturalPersonResponse resultResponse = objectMapper.readValue(resultContext, NaturalPersonResponse.class);
+        JAXBContext jaxbContext = JAXBContext.newInstance(NaturalPersonResponse.class);
+        Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+        @Cleanup StringReader stringReader = new StringReader(resultContext);
+        NaturalPersonResponse resultResponse = (NaturalPersonResponse) unmarshaller.unmarshal(stringReader);
 
         Assertions.assertNotNull(resultResponse);
         Assertions.assertEquals("59 ут 123456", resultResponse.getSts());
@@ -137,7 +142,7 @@ public class NaturalPersonControllerTest {
     @Test
     void checkBadRequestTest() throws Exception {
 
-        NaturalPersonRequest  invalidRequest = new NaturalPersonRequest();
+        NaturalPersonRequest invalidRequest = new NaturalPersonRequest();
         invalidRequest.setSts("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
@@ -155,9 +160,10 @@ public class NaturalPersonControllerTest {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
                         contentType(MediaType.APPLICATION_XML_VALUE).
+                        accept(MediaType.APPLICATION_XML_VALUE).
                         content(xmlRequest)).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value())).
-                andExpect(MockMvcResultMatchers.jsonPath("$.sts").value("the sts field cannot be empty"));
+                andExpect(MockMvcResultMatchers.xpath("//sts/text()").string("the sts field cannot be empty"));
 
     }
 
@@ -181,6 +187,7 @@ public class NaturalPersonControllerTest {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
                         contentType(MediaType.APPLICATION_XML_VALUE).
+                        accept(MediaType.APPLICATION_XML_VALUE).
                         content(xmlRequest)).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value()));
 
