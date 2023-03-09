@@ -31,7 +31,9 @@ public class LegalPersonController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "The response is found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = LegalPersonResponse.class))}),
+                            schema = @Schema(implementation = LegalPersonResponse.class)),
+                            @Content(mediaType = "application/xml",
+                                    schema = @Schema(implementation = LegalPersonResponse.class))}),
             @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
             @ApiResponse(responseCode = "404", description = "The response is not found", content = @Content),
             @ApiResponse(responseCode = "500", description = "SMV service is  is unavailable", content = @Content)})
@@ -43,7 +45,6 @@ public class LegalPersonController {
                     @Content(mediaType = "application/xml",
                             schema = @Schema(implementation = LegalPersonRequest.class))})
                                                            @Valid @org.springframework.web.bind.annotation.RequestBody LegalPersonRequest request) {
-
         return legalPersonRequestService.getResponseWithFineFromSMV(request);
 
     }
