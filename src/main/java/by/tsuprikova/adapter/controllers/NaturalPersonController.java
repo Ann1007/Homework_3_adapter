@@ -35,7 +35,9 @@ public class NaturalPersonController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "The response is found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = NaturalPersonResponse.class))}),
+                            schema = @Schema(implementation = NaturalPersonResponse.class)),
+                            @Content(mediaType = "application/xml",
+                                    schema = @Schema(implementation = NaturalPersonResponse.class))}),
             @ApiResponse(responseCode = "400", description = "Bad request", content = @Content),
             @ApiResponse(responseCode = "404", description = "The response is not found", content = @Content),
             @ApiResponse(responseCode = "500", description = "SMV service is unavailable", content = @Content)})
