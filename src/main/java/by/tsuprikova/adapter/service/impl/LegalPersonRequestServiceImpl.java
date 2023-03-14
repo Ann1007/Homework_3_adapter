@@ -8,7 +8,6 @@ import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -34,8 +33,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
         ResponseEntity<LegalPersonRequest> request = null;
         try {
 
-            request = retryTemplate.execute(retry ->
-                    restTemplate.postForEntity("/legal_person/request", legalPersonRequest, LegalPersonRequest.class));
+            request = restTemplate.postForEntity("/legal_person/request", legalPersonRequest, LegalPersonRequest.class);
 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
@@ -47,6 +45,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
 
     @Override
     public ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
+        log.info("Getting a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
         ResponseEntity<LegalPersonResponse> response = null;
         try {
             response = retryTemplate.execute(retryContext ->
@@ -69,8 +68,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
         ResponseEntity<Void> responseEntity = null;
 
         try {
-            responseEntity = retryTemplate.execute(retry ->
-                    restTemplate.exchange("/legal_person/response/" + id, HttpMethod.DELETE, null, Void.class, UUID.class));
+            responseEntity = restTemplate.exchange("/legal_person/response/" + id, HttpMethod.DELETE, null, Void.class, UUID.class);
 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
@@ -85,17 +83,9 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     public ResponseEntity<LegalPersonResponse> getResponseWithFineFromSMV(LegalPersonRequest legalPersonRequest) {
 
         ResponseEntity<LegalPersonRequest> savedRequest = transferClientRequest(legalPersonRequest);
-        ResponseEntity<LegalPersonResponse> responseWithFineEntity = null;
+        ResponseEntity<LegalPersonResponse> responseWithFineEntity = getResponse(savedRequest.getBody());
 
-        if (savedRequest.getStatusCode() == HttpStatus.ACCEPTED) {
-
-            responseWithFineEntity = getResponse(legalPersonRequest);
-            log.info("get a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
-
-            if (responseWithFineEntity != null) {
-                deleteResponse(responseWithFineEntity.getBody().getId());
-            }
-        }
+        deleteResponse(responseWithFineEntity.getBody().getId());
 
         return responseWithFineEntity;
     }

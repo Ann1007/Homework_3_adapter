@@ -8,7 +8,6 @@ import by.tsuprikova.adapter.service.NaturalPersonRequestService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -34,8 +33,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
         ResponseEntity<NaturalPersonRequest> request = null;
         try {
-            request = retryTemplate.execute(retry ->
-                    restTemplate.postForEntity("/natural_person/request", naturalPersonRequest, NaturalPersonRequest.class));
+            request = restTemplate.postForEntity("/natural_person/request", naturalPersonRequest, NaturalPersonRequest.class);
 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
@@ -49,6 +47,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
     public ResponseEntity<NaturalPersonResponse> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
+        log.info("Getting a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
         ResponseEntity<NaturalPersonResponse> response = null;
         try {
             response = retryTemplate.execute(retryContext ->
@@ -70,8 +69,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
         ResponseEntity<Void> responseEntity = null;
 
         try {
-            responseEntity = retryTemplate.execute(retry ->
-                    restTemplate.exchange("/natural_person/response/" + id, HttpMethod.DELETE, null, Void.class, UUID.class));
+            responseEntity = restTemplate.exchange("/natural_person/response/" + id, HttpMethod.DELETE, null, Void.class, UUID.class);
 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
@@ -85,19 +83,8 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     public ResponseEntity<NaturalPersonResponse> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest) {
 
         ResponseEntity<NaturalPersonRequest> responseEntity = transferClientRequest(naturalPersonRequest);
-        ResponseEntity<NaturalPersonResponse> responseWithFineEntity = null;
-
-        if (responseEntity.getStatusCode() == HttpStatus.ACCEPTED) {
-
-            responseWithFineEntity = getResponse(naturalPersonRequest);
-            log.info("Get a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
-
-            if (responseWithFineEntity.getBody() != null) {
-                deleteResponse(responseWithFineEntity.getBody().getId());
-
-            }
-
-        }
+        ResponseEntity<NaturalPersonResponse> responseWithFineEntity = getResponse(responseEntity.getBody());
+        deleteResponse(responseWithFineEntity.getBody().getId());
 
         return responseWithFineEntity;
 
