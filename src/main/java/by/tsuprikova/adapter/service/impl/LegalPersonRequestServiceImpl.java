@@ -6,6 +6,7 @@ import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ import java.util.UUID;
 
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class LegalPersonRequestServiceImpl implements LegalPersonRequestService {
 
@@ -28,7 +29,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     private final RetryTemplate retryTemplate;
 
 
-    public ResponseEntity<LegalPersonRequest> transferClientRequest(LegalPersonRequest legalPersonRequest) {
+    private ResponseEntity<LegalPersonRequest> transferClientRequest(LegalPersonRequest legalPersonRequest) {
         log.info("sending legal person request with inn ='{}' for saving on smv", legalPersonRequest.getInn());
         ResponseEntity<LegalPersonRequest> request = null;
         try {
@@ -43,9 +44,9 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     }
 
 
-    @Override
-    public ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
-        log.info("Getting a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
+
+    private ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
+        log.info("Getting a legal person response for inn ='{}' from SMV", legalPersonRequest.getInn());
         ResponseEntity<LegalPersonResponse> response = null;
         try {
             response = retryTemplate.execute(retryContext ->
@@ -62,7 +63,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     }
 
 
-    public ResponseEntity<Void> deleteResponse(UUID id) {
+    private ResponseEntity<Void> deleteResponse(UUID id) {
 
         log.info("sending id={} for delete legal person response from smv ", id);
         ResponseEntity<Void> responseEntity = null;

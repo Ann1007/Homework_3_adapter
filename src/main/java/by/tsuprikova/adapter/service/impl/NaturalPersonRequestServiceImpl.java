@@ -46,8 +46,8 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
 
     public ResponseEntity<NaturalPersonResponse> getResponse(NaturalPersonRequest naturalPersonRequest) {
-
         log.info("Getting a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
+
         ResponseEntity<NaturalPersonResponse> response = null;
         try {
             response = retryTemplate.execute(retryContext ->

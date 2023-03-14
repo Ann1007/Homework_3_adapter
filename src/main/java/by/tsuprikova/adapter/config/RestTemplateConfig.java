@@ -21,10 +21,6 @@ public class RestTemplateConfig {
                 .build();
     }
 
-    //@Bean
-    //public RestTemplate restTemplate() {
-       // return new RestTemplate();
-   // }
 
     @Bean
     public RetryTemplate retryTemplate() {
