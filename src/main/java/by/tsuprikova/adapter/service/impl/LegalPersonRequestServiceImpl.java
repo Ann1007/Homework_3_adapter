@@ -53,7 +53,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 onStatus(
                         HttpStatus::is4xxClientError,
                         response ->
-                                Mono.error(new ResponseNullException("No information found for '" + legalPersonRequest.getInn() + "'"))).
+                                Mono.error(new ResponseNullException("No information found for inn='" + legalPersonRequest.getInn() + "'"))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
@@ -63,7 +63,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                         .filter(throwable -> throwable instanceof ResponseNullException).
                         onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                         {
-                            throw new ResponseNullException("No information found for '" + legalPersonRequest.getInn() + "'");
+                            throw new ResponseNullException("No information found for inn='" + legalPersonRequest.getInn() + "'");
                         })).block();
     }
 

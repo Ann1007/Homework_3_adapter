@@ -98,7 +98,7 @@ public class LegalPersonServiceTest {
         ResponseNullException thrown = assertThrows(ResponseNullException.class,
                 () -> requestService.getResponseWithFineFromSMV(request));
 
-        String errorMessage = "No information found for '1234567890'";
+        String errorMessage = "No information found for inn='" + request.getInn() + "'";
         Assertions.assertEquals(errorMessage, thrown.getMessage());
     }
 

@@ -56,7 +56,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is4xxClientError,
                         response ->
-                                Mono.error(new ResponseNullException("No information found for '" + naturalPersonRequest.getSts() + "'"))).
+                                Mono.error(new ResponseNullException("No information found for sts='" + naturalPersonRequest.getSts() + "'"))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
@@ -67,7 +67,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                                 .filter(throwable -> throwable instanceof ResponseNullException).
                                 onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 {
-                                    throw new ResponseNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
+                                    throw new ResponseNullException("No information found for sts='" + naturalPersonRequest.getSts() + "'");
                                 })).block();
 
     }

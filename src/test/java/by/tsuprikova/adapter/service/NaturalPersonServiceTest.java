@@ -103,7 +103,7 @@ public class NaturalPersonServiceTest {
         ResponseNullException thrown = assertThrows(ResponseNullException.class,
                 () -> requestService.getResponseWithFineFromSMV(request));
 
-        String errorMessage = "No information found for '59 ут 123456'";
+        String errorMessage = "No information found for sts='" + request.getSts() + "'";
         Assertions.assertEquals(errorMessage, thrown.getMessage());
     }
 
