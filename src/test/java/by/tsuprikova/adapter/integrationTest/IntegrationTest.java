@@ -1,5 +1,6 @@
 package by.tsuprikova.adapter.integrationTest;
 
+import by.tsuprikova.adapter.exceptions.ResponseNullException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
@@ -34,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.ExpectedCount.times;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -192,6 +194,63 @@ public class IntegrationTest {
                 andExpect(MockMvcResultMatchers.xpath("//numberOfResolution/text()").string("34441521")).
                 andExpect(MockMvcResultMatchers.xpath("//articleOfKoap/text()").string("21.3"));
 
+    }
+
+
+    @Test
+    void getNullJsonNaturalPersonResponseTest() throws Exception {
+
+        mockServer.expect(once(), requestTo(URL_SAVE_NATURAL_PERSON_REQUEST)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.ACCEPTED).
+                        contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(naturalPersonRequest)));
+
+        mockServer.expect(times(3), requestTo(URL_GET_NATURAL_PERSON_RESPONSE)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond((response) -> {
+                    throw new ResponseNullException("No information found for sts='" + naturalPersonRequest.getSts() + "'");
+                });
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        accept(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(naturalPersonRequest))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value())).
+                andExpect(MockMvcResultMatchers.jsonPath("$.message").value("No information found for sts='59 ут 123456'"));
+
+
+    }
+
+
+    @Test
+    void getNullXmlNaturalPersonResponseTest() throws Exception {
+
+        JAXBContext context = JAXBContext.newInstance(NaturalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(naturalPersonRequest, sw);
+        String xmlRequest = sw.toString();
+
+        mockServer.expect(once(), requestTo(URL_SAVE_NATURAL_PERSON_REQUEST)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.ACCEPTED).
+                        contentType(MediaType.APPLICATION_XML)
+                        .body(xmlRequest));
+
+        mockServer.expect(times(3), requestTo(URL_GET_NATURAL_PERSON_RESPONSE)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond((response) -> {
+                    throw new ResponseNullException("No information found for sts='" + naturalPersonRequest.getSts() + "'");
+                });
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/natural_person/response").
+                        contentType(MediaType.APPLICATION_XML).
+                        accept(MediaType.APPLICATION_XML).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value())).
+                andExpect(MockMvcResultMatchers.xpath("//message/text()").string("No information found for sts='59 ут 123456'"));
 
     }
 
@@ -220,6 +279,7 @@ public class IntegrationTest {
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
                         contentType(MediaType.APPLICATION_JSON).
+                        accept(MediaType.APPLICATION_JSON).
                         content(objectMapper.writeValueAsString(legalPersonRequest))).
                 andExpect(MockMvcResultMatchers.status().is(HttpStatus.OK.value())).
                 andReturn();
@@ -276,7 +336,7 @@ public class IntegrationTest {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
                         contentType(MediaType.APPLICATION_XML).
-                        accept(MediaType.APPLICATION_XML_VALUE).
+                        accept(MediaType.APPLICATION_XML).
                         content(xmlRequest)).
                 andExpect(status().is(HttpStatus.OK.value())).
                 andExpect(MockMvcResultMatchers.xpath("//inn/text()").string(String.valueOf(1234567890L))).
@@ -284,6 +344,63 @@ public class IntegrationTest {
                 andExpect(MockMvcResultMatchers.xpath("//amountOfPaid/text()").string("44")).
                 andExpect(MockMvcResultMatchers.xpath("//numberOfResolution/text()").string(String.valueOf(321521))).
                 andExpect(MockMvcResultMatchers.xpath("//articleOfKoap/text()").string("21.7"));
+
+    }
+
+
+    @Test
+    void getNullJsonLegalPersonResponseTest() throws Exception {
+
+        mockServer.expect(once(), requestTo(URL_SAVE_LEGAL_PERSON_REQUEST)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.ACCEPTED).
+                        contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(legalPersonRequest)));
+
+        mockServer.expect(times(3), requestTo(URL_GET_LEGAL_PERSON_RESPONSE)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond((response) -> {
+                    throw new ResponseNullException("No information found for inn='" + legalPersonRequest.getInn() + "'");
+                });
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_JSON).
+                        accept(MediaType.APPLICATION_JSON).
+                        content(objectMapper.writeValueAsString(legalPersonRequest))).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value())).
+                andExpect(MockMvcResultMatchers.jsonPath("$.message").value("No information found for inn='1234567890'"));
+
+    }
+
+
+    @Test
+    void getNullXmlLegalPersonResponseTest() throws Exception {
+
+        JAXBContext context = JAXBContext.newInstance(LegalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(legalPersonRequest, sw);
+        String xmlRequest = sw.toString();
+
+        mockServer.expect(once(), requestTo(URL_SAVE_LEGAL_PERSON_REQUEST)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond(MockRestResponseCreators.withStatus(HttpStatus.ACCEPTED).
+                        contentType(MediaType.APPLICATION_XML)
+                        .body(xmlRequest));
+
+        mockServer.expect(times(3), requestTo(URL_GET_LEGAL_PERSON_RESPONSE)).
+                andExpect(method(HttpMethod.POST)).
+                andRespond((response) -> {
+                    throw new ResponseNullException("No information found for inn='" + legalPersonRequest.getInn() + "'");
+                });
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
+                        contentType(MediaType.APPLICATION_XML).
+                        accept(MediaType.APPLICATION_XML).
+                        content(xmlRequest)).
+                andExpect(MockMvcResultMatchers.status().is(HttpStatus.NOT_FOUND.value())).
+                andExpect(MockMvcResultMatchers.xpath("//message/text()").string("No information found for inn='1234567890'"));
 
     }
 
