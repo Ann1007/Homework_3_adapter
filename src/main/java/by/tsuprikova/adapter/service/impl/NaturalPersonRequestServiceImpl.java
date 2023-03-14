@@ -52,7 +52,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                     restTemplate.postForEntity("/natural_person/response", naturalPersonRequest, NaturalPersonResponse.class));
 
         } catch (HttpClientErrorException e) {
-            throw new ResponseNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
+            throw new ResponseNullException("No information found for sts='" + naturalPersonRequest.getSts() + "'");
 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");

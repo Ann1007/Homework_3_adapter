@@ -52,7 +52,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                     restTemplate.postForEntity("/legal_person/response", legalPersonRequest, LegalPersonResponse.class));
 
         } catch (HttpClientErrorException e) {
-            throw new ResponseNullException("No information found for '" + legalPersonRequest.getInn() + "'");
+            throw new ResponseNullException("No information found for inn='" + legalPersonRequest.getInn() + "'");
 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
