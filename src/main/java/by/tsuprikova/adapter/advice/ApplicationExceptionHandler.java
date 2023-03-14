@@ -1,6 +1,6 @@
 package by.tsuprikova.adapter.advice;
 
-import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.ResponseNullException;
 import by.tsuprikova.adapter.exceptions.SmvServiceException;
 import by.tsuprikova.adapter.model.ErrorMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +35,8 @@ public class ApplicationExceptionHandler {
 
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler(ResponseWithFineNullException.class)
-    public ResponseEntity<ErrorMessage> handleResponseWithFineNullException(ResponseWithFineNullException ex) {
+    @ExceptionHandler(ResponseNullException.class)
+    public ResponseEntity<ErrorMessage> handleResponseWithFineNullException(ResponseNullException ex) {
         log.error(ex.getMessage());
         ErrorMessage errorMessage = new ErrorMessage(ex.getMessage());
         return new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);

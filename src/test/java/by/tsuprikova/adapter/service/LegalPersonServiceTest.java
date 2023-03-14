@@ -1,6 +1,6 @@
 package by.tsuprikova.adapter.service;
 
-import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.ResponseNullException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.service.impl.LegalPersonRequestServiceImpl;
@@ -43,6 +43,7 @@ public class LegalPersonServiceTest {
     private LegalPersonRequestService requestService;
 
     private LegalPersonRequest request;
+    private LegalPersonResponse response;
 
     @BeforeAll
     static void beforeAll() throws IOException {
@@ -55,8 +56,19 @@ public class LegalPersonServiceTest {
 
         WebClient webClient = WebClient.builder().baseUrl(mockWebServer.url("/").toString()).build();
         requestService = new LegalPersonRequestServiceImpl(webClient);
+
         request = new LegalPersonRequest();
         request.setInn(1234567890L);
+
+        UUID id = UUID.randomUUID();
+        response = new LegalPersonResponse();
+        response.setInn(1234567890L);
+        response.setAmountOfAccrual(new BigDecimal(28));
+        response.setArticleOfKoap("21.3");
+        response.setAmountOfPaid(new BigDecimal(28));
+        response.setNumberOfResolution(321521);
+        response.setId(id);
+
 
     }
 
@@ -67,80 +79,13 @@ public class LegalPersonServiceTest {
 
 
     @Test
-    void transferValidJsonPersonRequestTest() throws Exception {
+    void getNullResponseTest() throws Exception {
 
-        MockResponse response = new MockResponse().
-                setBody(objectMapper.writeValueAsString(request)).
+        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(request)).
                 setResponseCode(202).
                 addHeader("Content-Type", "application/json");
 
         mockWebServer.enqueue(response);
-        ResponseEntity<LegalPersonRequest> result = requestService.transferClientRequest(request);
-
-        assertThat(result.getBody().getInn(), is(1234567890L));
-        assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
-
-
-    }
-
-
-    @Test
-    void transferValidXmlPersonRequestTest() throws Exception {
-
-        JAXBContext jaxbContext = JAXBContext.newInstance(LegalPersonRequest.class);
-        Marshaller marshaller = jaxbContext.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        @Cleanup StringWriter sw = new StringWriter();
-        marshaller.marshal(request, sw);
-        String xmlRequest = sw.toString();
-
-        MockResponse response = new MockResponse().
-                setBody(xmlRequest).
-                setResponseCode(202).
-                addHeader("Content-Type", "application/xml");
-
-        mockWebServer.enqueue(response);
-        ResponseEntity<LegalPersonRequest> result = requestService.transferClientRequest(request);
-
-        assertThat(result.getBody().getInn(), is(1234567890L));
-        assertThat(result.getStatusCode(), is(HttpStatus.ACCEPTED));
-
-    }
-
-
-    @Test
-    void getNotNullResponseTest() throws Exception {
-
-        LegalPersonResponse response = new LegalPersonResponse();
-        BigDecimal amountOfAccrual = new BigDecimal(28);
-        BigDecimal amountOfPaid = new BigDecimal(28);
-        int numberOfResolution = 321521;
-        String articleOfKoap = "21.3";
-        response.setInn(1234567890L);
-        response.setAmountOfAccrual(amountOfAccrual);
-        response.setArticleOfKoap(articleOfKoap);
-        response.setAmountOfPaid(amountOfPaid);
-        response.setNumberOfResolution(numberOfResolution);
-
-        MockResponse mockResponse = new MockResponse().setBody(objectMapper.writeValueAsString(response)).
-                setResponseCode(200).
-                addHeader("Content-Type", "application/json");
-
-        mockWebServer.enqueue(mockResponse);
-        ResponseEntity<LegalPersonResponse> resultResponse = requestService.getResponse(request);
-
-        assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
-        assertThat(resultResponse.getBody().getInn(), is(1234567890L));
-        assertThat(resultResponse.getBody().getAmountOfAccrual(), is(amountOfAccrual));
-        assertThat(resultResponse.getBody().getAmountOfPaid(), is(amountOfPaid));
-        assertThat(resultResponse.getBody().getArticleOfKoap(), is(articleOfKoap));
-        assertThat(resultResponse.getBody().getNumberOfResolution(), is(numberOfResolution));
-
-    }
-
-
-    @Test
-    void getNullResponseTest() {
 
         MockResponse mockResponse = new MockResponse().
                 setResponseCode(404);
@@ -150,30 +95,80 @@ public class LegalPersonServiceTest {
         mockWebServer.enqueue(mockResponse);
         mockWebServer.enqueue(mockResponse);
 
-        ResponseWithFineNullException thrown = assertThrows(ResponseWithFineNullException.class, () -> requestService.getResponse(request));
+        ResponseNullException thrown = assertThrows(ResponseNullException.class,
+                () -> requestService.getResponseWithFineFromSMV(request));
 
         String errorMessage = "No information found for '1234567890'";
         Assertions.assertEquals(errorMessage, thrown.getMessage());
-
-
     }
 
 
     @Test
-    void deleteResponseById() throws Exception {
+    void getNotNullJsonResponseWithValidJsonRequestTest() throws Exception {
 
-        UUID id = UUID.randomUUID();
-        ResponseEntity<Void> res = new ResponseEntity<>(HttpStatus.OK);
-        MockResponse response = new MockResponse().setBody(objectMapper.writeValueAsString(res)).
+        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(request)).
+                setResponseCode(202).
+                addHeader("Content-Type", "application/json"));
+
+        mockWebServer.enqueue(new MockResponse().setBody(objectMapper.writeValueAsString(response)).
                 setResponseCode(200).
-                addHeader("Content-Type", "application/json");
+                addHeader("Content-Type", "application/json"));
 
-        mockWebServer.enqueue(response);
+        mockWebServer.enqueue(new MockResponse().
+                setResponseCode(200).
+                addHeader("Content-Type", "application/json"));
 
-        ResponseEntity<Void> deleteResult = requestService.deleteResponse(id);
-        assertThat(deleteResult.getStatusCode(), is(HttpStatus.OK));
+        ResponseEntity<LegalPersonResponse> resultResponse = requestService.getResponseWithFineFromSMV(request);
+
+        assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
+        assertThat(resultResponse.getBody().getInn(), is(1234567890L));
+        assertThat(resultResponse.getBody().getAmountOfAccrual(), is(new BigDecimal(28)));
+        assertThat(resultResponse.getBody().getAmountOfPaid(), is(new BigDecimal(28)));
+        assertThat(resultResponse.getBody().getArticleOfKoap(), is("21.3"));
+        assertThat(resultResponse.getBody().getNumberOfResolution(), is(321521));
 
     }
 
+    @Test
+    void getNotNullXmlResponseWithValidXmlRequestTest() throws Exception {
+
+
+        JAXBContext context = JAXBContext.newInstance(LegalPersonRequest.class);
+        Marshaller mar = context.createMarshaller();
+        mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter sw = new StringWriter();
+        mar.marshal(request, sw);
+        String xmlRequest = sw.toString();
+
+        mockWebServer.enqueue(new MockResponse().setBody(xmlRequest).
+                setResponseCode(202).
+                addHeader("Content-Type", "application/xml"));
+
+
+        JAXBContext jaxbContext = JAXBContext.newInstance(LegalPersonResponse.class);
+        Marshaller marshaller = jaxbContext.createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        @Cleanup StringWriter stringWriter = new StringWriter();
+        marshaller.marshal(response, stringWriter);
+        String xmlResponse = stringWriter.toString();
+
+        mockWebServer.enqueue(new MockResponse().setBody(xmlResponse).
+                setResponseCode(200).
+                addHeader("Content-Type", "application/xml"));
+
+        mockWebServer.enqueue(new MockResponse().
+                setResponseCode(200).
+                addHeader("Content-Type", "application/xml"));
+
+        ResponseEntity<LegalPersonResponse> resultResponse = requestService.getResponseWithFineFromSMV(request);
+
+        assertThat(resultResponse.getStatusCode(), is(HttpStatus.OK));
+        assertThat(resultResponse.getBody().getInn(), is(1234567890L));
+        assertThat(resultResponse.getBody().getAmountOfAccrual(), is(new BigDecimal(28)));
+        assertThat(resultResponse.getBody().getAmountOfPaid(), is(new BigDecimal(28)));
+        assertThat(resultResponse.getBody().getArticleOfKoap(), is("21.3"));
+        assertThat(resultResponse.getBody().getNumberOfResolution(), is(321521));
+
+    }
 
 }

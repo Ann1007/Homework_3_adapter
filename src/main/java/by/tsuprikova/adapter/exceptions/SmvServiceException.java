@@ -1,6 +1,7 @@
 package by.tsuprikova.adapter.exceptions;
 
-public class SmvServiceException extends Exception {
+public class SmvServiceException extends RuntimeException {
+
     public SmvServiceException() {
     }
 

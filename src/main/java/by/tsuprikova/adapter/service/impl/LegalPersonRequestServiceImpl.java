@@ -1,6 +1,6 @@
 package by.tsuprikova.adapter.service.impl;
 
-import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.ResponseNullException;
 import by.tsuprikova.adapter.exceptions.SmvServiceException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
@@ -8,7 +8,6 @@ import by.tsuprikova.adapter.service.LegalPersonRequestService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -27,9 +26,10 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     private final WebClient webClient;
 
 
-    public ResponseEntity<LegalPersonRequest> transferClientRequest(LegalPersonRequest legalPersonRequest) {
+    private void transferClientRequest(LegalPersonRequest legalPersonRequest) {
         log.info("sending legal person request with inn ='{}' for saving on smv", legalPersonRequest.getInn());
-        return webClient.
+
+        webClient.
                 post().
                 uri("/legal_person/request").
                 bodyValue(legalPersonRequest).
@@ -44,9 +44,8 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     }
 
 
-    @Override
-    public ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
-
+    private ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
+        log.info("get a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
         return webClient.post().
                 uri("/legal_person/response").
                 bodyValue(legalPersonRequest).
@@ -54,26 +53,26 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                 onStatus(
                         HttpStatus::is4xxClientError,
                         response ->
-                                Mono.error(new ResponseWithFineNullException("No information found for '" + legalPersonRequest.getInn()+"'"))).
+                                Mono.error(new ResponseNullException("No information found for '" + legalPersonRequest.getInn() + "'"))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
                                 Mono.error(new SmvServiceException("SMV service is unavailable"))).
                 toEntity(LegalPersonResponse.class).
                 retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
-                        .filter(throwable -> throwable instanceof ResponseWithFineNullException).
+                        .filter(throwable -> throwable instanceof ResponseNullException).
                         onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                         {
-                            throw new ResponseWithFineNullException("No information found for '" + legalPersonRequest.getInn()+"'");
+                            throw new ResponseNullException("No information found for '" + legalPersonRequest.getInn() + "'");
                         })).block();
     }
 
 
-    public ResponseEntity<Void> deleteResponse(UUID id) {
+    private void deleteResponse(UUID id) {
 
         log.info("sending id={} for delete legal person response from smv ", id);
 
-        return webClient.delete()
+         webClient.delete()
                 .uri("/legal_person/response/{id}", id).
                 retrieve().
                 onStatus(
@@ -88,18 +87,10 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     @Override
     public ResponseEntity<LegalPersonResponse> getResponseWithFineFromSMV(LegalPersonRequest legalPersonRequest) {
 
-        ResponseEntity<LegalPersonRequest> savedRequest = transferClientRequest(legalPersonRequest);
-        ResponseEntity<LegalPersonResponse> responseWithFineEntity = null;
+        transferClientRequest(legalPersonRequest);
+        ResponseEntity<LegalPersonResponse> responseWithFineEntity = getResponse(legalPersonRequest);
 
-        if (savedRequest.getStatusCode() == HttpStatus.ACCEPTED) {
-
-            responseWithFineEntity = getResponse(legalPersonRequest);
-            log.info("get a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
-
-            if (responseWithFineEntity != null) {
-                deleteResponse(responseWithFineEntity.getBody().getId());
-            }
-        }
+        deleteResponse(responseWithFineEntity.getBody().getId());
 
         return responseWithFineEntity;
     }

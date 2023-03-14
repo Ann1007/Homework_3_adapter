@@ -1,6 +1,6 @@
 package by.tsuprikova.adapter.service.impl;
 
-import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.ResponseNullException;
 import by.tsuprikova.adapter.exceptions.SmvServiceException;
 import by.tsuprikova.adapter.model.NaturalPersonRequest;
 import by.tsuprikova.adapter.model.NaturalPersonResponse;
@@ -26,10 +26,10 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     private final WebClient webClient;
 
 
-    public ResponseEntity<NaturalPersonRequest> transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
+    private void transferClientRequest(NaturalPersonRequest naturalPersonRequest) {
         log.info("Sending natural person request with sts ='{}' for saving on smv", naturalPersonRequest.getSts());
 
-        return webClient.
+        webClient.
                 post().
                 uri("/natural_person/request").
                 bodyValue(naturalPersonRequest).
@@ -47,6 +47,8 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
     public ResponseEntity<NaturalPersonResponse> getResponse(NaturalPersonRequest naturalPersonRequest) {
 
+        log.info("Getting a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
+
         return webClient.post().
                 uri("/natural_person/response").
                 bodyValue(naturalPersonRequest).
@@ -54,7 +56,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 onStatus(
                         HttpStatus::is4xxClientError,
                         response ->
-                                Mono.error(new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'"))).
+                                Mono.error(new ResponseNullException("No information found for '" + naturalPersonRequest.getSts() + "'"))).
                 onStatus(
                         HttpStatus::is5xxServerError,
                         response ->
@@ -62,19 +64,19 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                 toEntity(NaturalPersonResponse.class).
                 retryWhen(
                         Retry.backoff(3, Duration.ofSeconds(2))
-                                .filter(throwable -> throwable instanceof ResponseWithFineNullException).
+                                .filter(throwable -> throwable instanceof ResponseNullException).
                                 onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 {
-                                    throw new ResponseWithFineNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
+                                    throw new ResponseNullException("No information found for '" + naturalPersonRequest.getSts() + "'");
                                 })).block();
 
     }
 
 
-    public ResponseEntity<Void> deleteResponse(UUID id) {
+    private void deleteResponse(UUID id) {
         log.info("Sending id='{}' for delete natural person response from smv ", id);
 
-        return webClient.delete()
+        webClient.delete()
                 .uri("/natural_person/response/{id}", id).
                 retrieve().
                 onStatus(
@@ -89,19 +91,10 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
     @Override
     public ResponseEntity<NaturalPersonResponse> getResponseWithFineFromSMV(NaturalPersonRequest naturalPersonRequest) {
 
-        ResponseEntity<NaturalPersonRequest> responseEntity = transferClientRequest(naturalPersonRequest);
-        ResponseEntity<NaturalPersonResponse> responseWithFineEntity = null;
+        transferClientRequest(naturalPersonRequest);
+        ResponseEntity<NaturalPersonResponse> responseWithFineEntity = getResponse(naturalPersonRequest);
 
-        if (responseEntity.getStatusCode() == HttpStatus.ACCEPTED) {
-
-            responseWithFineEntity = getResponse(naturalPersonRequest);
-            log.info("Get a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
-
-            if (responseWithFineEntity.getBody() != null) {
-                deleteResponse(responseWithFineEntity.getBody().getId());
-
-            }
-        }
+        deleteResponse(responseWithFineEntity.getBody().getId());
 
         return responseWithFineEntity;
 
