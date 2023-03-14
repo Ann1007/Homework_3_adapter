@@ -1,6 +1,6 @@
 package by.tsuprikova.adapter.controller;
 
-import by.tsuprikova.adapter.exceptions.ResponseWithFineNullException;
+import by.tsuprikova.adapter.exceptions.ResponseNullException;
 import by.tsuprikova.adapter.model.LegalPersonRequest;
 import by.tsuprikova.adapter.model.LegalPersonResponse;
 import by.tsuprikova.adapter.service.LegalPersonRequestService;
@@ -167,7 +167,7 @@ public class LegalPersonControllerTest {
     @Test
     void getNullResponseTest() throws Exception {
 
-        Mockito.when(requestService.getResponseWithFineFromSMV(any(LegalPersonRequest.class))).thenThrow(ResponseWithFineNullException.class);
+        Mockito.when(requestService.getResponseWithFineFromSMV(any(LegalPersonRequest.class))).thenThrow(ResponseNullException.class);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/adapter/legal_person/response").
                         contentType(MediaType.APPLICATION_JSON).
