@@ -57,7 +57,8 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
         }
-        return response;
+
+        return new ResponseEntity<>(response.getBody(), response.getStatusCode());
     }
 
 

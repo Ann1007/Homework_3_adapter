@@ -43,7 +43,6 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
     }
 
 
-
     private ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
         log.info("Getting a legal person response for inn ='{}' from SMV", legalPersonRequest.getInn());
         ResponseEntity<LegalPersonResponse> response = null;
@@ -57,7 +56,8 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
         } catch (HttpServerErrorException e) {
             throw new SmvServiceException("SMV service is unavailable");
         }
-        return response;
+
+        return new ResponseEntity<>(response.getBody(), response.getStatusCode());
 
     }
 
@@ -73,6 +73,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
             throw new SmvServiceException("SMV service is unavailable");
 
         }
+
 
     }
 
