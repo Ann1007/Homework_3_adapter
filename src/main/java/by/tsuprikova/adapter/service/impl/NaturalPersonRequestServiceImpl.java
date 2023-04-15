@@ -49,7 +49,7 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
 
         log.info("Getting a natural person response with sts ='{}' from SMV", naturalPersonRequest.getSts());
 
-        return webClient.post().
+        ResponseEntity<NaturalPersonResponse> res= webClient.post().
                 uri("/natural_person/response").
                 bodyValue(naturalPersonRequest).
                 retrieve().
@@ -70,6 +70,8 @@ public class NaturalPersonRequestServiceImpl implements NaturalPersonRequestServ
                                     throw new ResponseNullException("No information found for sts='" + naturalPersonRequest.getSts() + "'");
                                 })).block();
 
+
+        return new ResponseEntity<>(res.getBody(),res.getStatusCode());
     }
 
 

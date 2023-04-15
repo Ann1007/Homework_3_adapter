@@ -46,7 +46,7 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
 
     private ResponseEntity<LegalPersonResponse> getResponse(LegalPersonRequest legalPersonRequest) {
         log.info("get a legal person response for INN ='{}' from SMV", legalPersonRequest.getInn());
-        return webClient.post().
+        ResponseEntity<LegalPersonResponse> res= webClient.post().
                 uri("/legal_person/response").
                 bodyValue(legalPersonRequest).
                 retrieve().
@@ -65,6 +65,8 @@ public class LegalPersonRequestServiceImpl implements LegalPersonRequestService 
                         {
                             throw new ResponseNullException("No information found for inn='" + legalPersonRequest.getInn() + "'");
                         })).block();
+
+       return new ResponseEntity<>(res.getBody(),res.getStatusCode());
     }
 
 
