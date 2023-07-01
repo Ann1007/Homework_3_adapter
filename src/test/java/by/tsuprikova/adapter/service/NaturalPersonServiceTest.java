@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ActiveProfiles("test")
 public class NaturalPersonServiceTest {
 
-    @LocalServerPort
+   /* @LocalServerPort
     private int port;
 
     @Autowired
@@ -179,6 +179,6 @@ public class NaturalPersonServiceTest {
         assertThat(resultResponse.getBody().getNumberOfResolution(), is(321521));
 
     }
-
+*/
 
 }

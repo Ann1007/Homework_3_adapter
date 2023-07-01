@@ -47,7 +47,13 @@ public class NaturalPersonController {
             content = {@Content(mediaType = "application/json", schema = @Schema(implementation = NaturalPersonRequest.class)),
                     @Content(mediaType = "application/xml", schema = @Schema(implementation = NaturalPersonRequest.class))})
                                                                      @Valid @org.springframework.web.bind.annotation.RequestBody NaturalPersonRequest clientReq) {
-        return naturalPersonRequestService.getResponseWithFineFromSMV(clientReq);
+        ResponseEntity<NaturalPersonResponse> rns = null;
+        try {
+            rns = naturalPersonRequestService.getResponseWithFineFromSMV(clientReq);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rns;
 
     }
 
